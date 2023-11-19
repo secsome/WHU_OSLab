@@ -1,0 +1,17 @@
+{
+    "env": {
+      "myDefines": []
+    },
+    "configurations": [
+      {
+        "name": "Linux",
+        "compilerPath": "/usr/bin/gcc",
+        "compilerArgs": ["-m32"],
+        "intelliSenseMode": "linux-gcc-x86",
+        "includePath": ["${workspaceFolder}/include"],
+        "defines": ["${myDefines}"]
+      }
+    ],
+    "version": 4,
+    "enableConfigurationSquiggles": true
+}

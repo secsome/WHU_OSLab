@@ -1,0 +1,41 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"type": "shell",
+			"label": "(Build) Make kernel image",
+			"command": "make image",
+			"group": "build",
+		},
+		{
+			"type": "shell",
+			"dependsOn": "(Build) Make kernel image",
+			"label": "(Debug) Build and run bochs",
+			"command": "bochs -q",
+			"isBackground": true,
+			// This task is run before some debug tasks.
+      		// Problem is, it's a watch script, and since it never exits, VSCode
+      		// complains. All this is needed so VSCode just lets it run.
+      		"problemMatcher": 
+			[
+      			{
+      				"pattern": 
+					[
+      					{
+      						"regexp": ".",
+      						"file": 1,
+      						"location": 2,
+      						"message": 3
+      					}
+      				],
+      				"background": 
+					{
+      					"activeOnStart": true,
+      					"beginsPattern": ".",
+      					"endsPattern": ".",
+      				}
+      			}
+      		]
+		}
+	]
+}
