@@ -1,4 +1,4 @@
-#include "string.h"
+#include "lib/string.h"
 
 PUBLIC void* memcpy(void* dest, const void* src, size_t n)
 {

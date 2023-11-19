@@ -1,7 +1,7 @@
-#include "protect.h"
-#include "string.h"
-#include "global.h"
-#include "display.h"
+#include "kernel/protect.h"
+#include "kernel/global.h"
+#include "lib/display.h"
+#include "lib/string.h"
 
 char pusheen_os[] = {
 " ____  __  __  ___  _   _  ____  ____  _  _    _____  ___ \n"

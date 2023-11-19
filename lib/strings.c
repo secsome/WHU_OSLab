@@ -1,2 +1,2 @@
-#include "strings.h"
+#include "lib/strings.h"
 

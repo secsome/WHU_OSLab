@@ -1,5 +1,6 @@
-#include "protect.h"
-#include "display.h"
+#include "kernel/protect.h"
+#include "lib/display.h"
+#include "lib/asm.h"
 
 #define INT_M_CTL     0x20 /* I/O port for interrupt controller       <Master> */
 #define INT_M_CTLMASK 0x21 /* setting bits in this port disables ints <Master> */

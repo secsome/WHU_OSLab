@@ -1,5 +1,6 @@
-#include "display.h"
-#include "string.h"
+#include "lib/display.h"
+#include "lib/string.h"
+#include "lib/asm.h"
 
 int disp_pos;
 

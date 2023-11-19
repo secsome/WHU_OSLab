@@ -1,11 +1,6 @@
-#include "type.h"
-#include "const.h"
-#include "protect.h"
-#include "proto.h"
-#include "string.h"
-#include "global.h"
+#include "lib/asm.h"
 
-PUBLIC __attribute__((naked)) void out_byte(u16 port, u8 value)
+PUBLIC NAKED void out_byte(u16 port, u8 value)
 {
 	asm volatile
 	(
@@ -18,7 +13,7 @@ PUBLIC __attribute__((naked)) void out_byte(u16 port, u8 value)
 	);
 }
 
-PUBLIC __attribute__((naked)) u8 in_byte(u16 port)
+PUBLIC NAKED u8 in_byte(u16 port)
 {
 	asm volatile
 	(

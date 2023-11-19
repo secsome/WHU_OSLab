@@ -5,7 +5,7 @@
 			"type": "shell",
 			"label": "(Build) Make kernel image",
 			"command": "make image",
-			"group": "build",
+			"group": "build"
 		},
 		{
 			"type": "shell",

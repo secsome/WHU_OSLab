@@ -1,6 +1,6 @@
-#include "protect.h"
-#include "display.h"
-#include "global.h"
+#include "kernel/protect.h"
+#include "kernel/global.h"
+#include "lib/display.h"
 
 /* 本文件内函数声明 */
 PRIVATE void init_idt_desc(unsigned char vector, u8 desc_type, int_handler handler, unsigned char privilege);
