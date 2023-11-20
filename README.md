@@ -1,6 +1,8 @@
 # WHU_OSLab
 武汉大学信息安全操作系统实验
 
+https://github.com/secsome/WHU_OSLab/assets/41946354/1d8b886a-53a7-4363-9cca-519a3ee75b57
+
 ## Requirements:
 - `Ubuntu` >= 20.04 (other releases not tested)
 - `gcc`
