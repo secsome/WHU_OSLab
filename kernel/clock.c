@@ -6,11 +6,15 @@
 void clock_handler(int irq)
 {
     ++sys_tick_count;
+    
+    if (p_proc_ready->ticks > 0)
+    {
+        --p_proc_ready->ticks;
+        return;
+    }
 
     if (k_reenter != 0)
         return;
-
-    ++p_proc_ready;
-    if (p_proc_ready >= proc_table + NUM_TASKS)
-        p_proc_ready = proc_table;
+    
+    schedual();
 }

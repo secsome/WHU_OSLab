@@ -31,6 +31,8 @@ typedef struct process_t
     stackframe_t regs;
     u16 ldt_selector;
     descriptor_t ldts[LDT_SIZE];
+    u32 ticks; // remained ticks
+    u32 priority;
     u32 pid;
     char process_name[16];
 } process_t;
@@ -55,3 +57,5 @@ typedef struct task_t
 } task_t;
 
 extern task_t task_table[NUM_TASKS];
+
+void schedual();

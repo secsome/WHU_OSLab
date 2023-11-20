@@ -1,3 +1,4 @@
 #pragma once
 
-void usleep(int milli_sec);
+void usleep(int millisecond);
+void sleep(int second);

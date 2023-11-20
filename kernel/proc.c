@@ -38,34 +38,28 @@ task_t task_table[NUM_TASKS] =
 
 void TestA()
 {
-    int i = 0;
     while (true)
     {
-        disp_str(" ");
-        disp_color_int(i++, 0xC);
-		usleep(1000);
+        disp_color_str("A.", 0xC);
+		usleep(10);
     }
 }
 
 void TestB()
 {
-    int i = 0;
     while (true)
     {
-        disp_str(" ");
-        disp_color_int(i++, 0xD);
-        usleep(1000);
+        disp_color_str("B.", 0xD);
+        usleep(10);
     }
 }
 
 void TestC()
 {
-    int i = 0;
     while (true)
     {
-        disp_str(" ");
-        disp_color_int(i++, 0xE);
-        usleep(1000);
+        disp_color_str("C.", 0xE);
+        usleep(10);
     }
 }
 
@@ -73,8 +67,6 @@ extern void restart();
 int kernel_main()
 {
     disp_str("-----\"kernel_main\" begins-----\n");
-
-	sys_tick_count = 0;
 
 	task_t* p_task = task_table;
 	process_t* p_proc = proc_table;
@@ -106,9 +98,14 @@ int kernel_main()
 		selector_ldt += 1 << 3;
 	}
 
+	proc_table[0].ticks = proc_table[0].priority = 15;
+	proc_table[1].ticks = proc_table[1].priority = 5;
+	proc_table[2].ticks = proc_table[2].priority = 3;
+	
 	k_reenter = 0;
+	sys_tick_count = 0;
 
-	p_proc_ready = proc_table; 
+	p_proc_ready = proc_table;
 
 	out_byte(TIMER_MODE, RATE_GENERATOR);
     out_byte(TIMER0, (u8) (TIMER_FREQ/HZ) );
@@ -117,10 +114,35 @@ int kernel_main()
 	put_irq_handler(CLOCK_IRQ, clock_handler);
 	enable_irq(CLOCK_IRQ);
 
+	disp_clear();
+	disp_reset();
 	restart();
 
 	while (true)
 	{
 		// Do nothing
+	}
+}
+
+void schedual()
+{
+	int greatest_ticks = 0;
+
+	while (!greatest_ticks) 
+	{
+		for (process_t* p = proc_table; p < proc_table + NUM_TASKS; ++p)
+		{
+			if (p->ticks > greatest_ticks)
+			{
+				greatest_ticks = p->ticks;
+				p_proc_ready = p;
+			}
+		}
+
+		if (!greatest_ticks)
+		{
+			for (process_t* p = proc_table; p < proc_table + NUM_TASKS; ++p)
+				p->ticks = p->priority;
+		}
 	}
 }
