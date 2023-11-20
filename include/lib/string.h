@@ -22,7 +22,7 @@ char* strchr(const char* s, int c);
 int strcmp(const char* s1, const char* s2);
 
 // Compare the strings s1 with s2 using the current locale.
-int strcoll(const char* s1, const char* s2);
+// int strcoll(const char* s1, const char* s2);
 
 // Copy the string src to dest, returning a pointer to the start of dest.
 char* strcpy(char* dest, const char* src);
@@ -31,10 +31,10 @@ char* strcpy(char* dest, const char* src);
 size_t strcspn(const char* s, const char* reject);
 
 // Return a duplicate of the string s in memory allocated using malloc(3).
-char* strdup(const char* s);
+// char* strdup(const char* s);
 
 // Randomly swap the characters in string.
-char* strfry(char* string);
+// char* strfry(char* string);
 
 // Return the length of the string s.
 size_t strlen(const char* s);
@@ -67,4 +67,4 @@ char* strstr(const char* haystack, const char* needle);
 char* strtok(char* s, const char* delim);
 
 // Transforms src to the current locale and copies the first n bytes to dest.
-size_t strxfrm(char* dest, const char* src, size_t n);
+// size_t strxfrm(char* dest, const char* src, size_t n);
