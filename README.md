@@ -2,18 +2,24 @@
 武汉大学信息安全操作系统实验
 
 ## Requirements:
-- Ubuntu >= 20.04
-- gcc
-- gdb
-- nasm >= 2.15.5
-- Makefile
-- VSCode Extensions:
-  - asm-enable-debug
-  - C/C++
-  - C/C++ Extension Pack
+- `Ubuntu` >= 20.04 (other releases not tested)
+- `gcc`
+- `gdb`
+- `nasm` >= 2.15.5
+- `Makefile`
+- `Bochs` with gdb-stub support
+- `VSCode` Extensions:
+  - `asm-enable-debug`
+  - `C/C++`
+  - `C/C++ Extension Pack`
 
 ## Usage:
-In `Visual Studio Code`, Press `F5` to launch the simulation. `Ctrl + Shift + B` for `make image`.
+1. - In your linux terminal:
+      1. `git clone https://github.com/secsome/WHU_OSLab.git`
+      2. `cd WHU_OSLab`
+      3. `vscode`
+   - Or just open this workdir In `Visual Studio Code` manually
+2. Press `F5` to launch the simulation. `Ctrl + Shift + B` for `make image`.
 
 ## Features:
 - Full source code debug, both .asm and .c files are supported
@@ -22,4 +28,4 @@ In `Visual Studio Code`, Press `F5` to launch the simulation. `Ctrl + Shift + B`
 
 ## Footnotes:
 - This project is based on the cdimage provided by `OrangeOS`.
-- Still WIP while the author hasn't finish the labs right now.
+- Still **WIP** while the author hasn't finish the labs right now.
