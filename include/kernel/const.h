@@ -7,10 +7,16 @@
 #define NAKED __attribute__((naked))
 
 /* GDT 和 IDT 中描述符的个数 */
-#define	GDT_SIZE 128
-#define	IDT_SIZE 256
+enum 
+{
+    GDT_SIZE = 128,
+    IDT_SIZE = 256
+};
 
 /* 权限 */
-#define	PRIVILEGE_KRNL 0
-#define	PRIVILEGE_TASK 1
-#define	PRIVILEGE_USER 3
+enum
+{
+    PRIVILEGE_KRNL = 0,
+    PRIVILEGE_TASK = 1,
+    PRIVILEGE_USER = 3
+};

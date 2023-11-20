@@ -1,7 +1,17 @@
 #include <kernel/clock.h>
 #include <kernel/proc.h>
 #include <kernel/syscall.h>
+#include <lib/asm.h>
 #include <lib/display.h>
+
+void init_clock()
+{
+    out_byte(CLOCK_TIMER_MODE, CLOCK_RATE_GENERATOR);
+    out_byte(CLOCK_TIMER0, (u8)(CLOCK_TIMER_FREQ / CLOCK_HZ));
+    out_byte(CLOCK_TIMER0, (u8)((CLOCK_TIMER_FREQ / CLOCK_HZ) >> 8));
+	put_irq_handler(CLOCK_IRQ, clock_handler);
+	enable_irq(CLOCK_IRQ);
+}
 
 void clock_handler(int irq)
 {

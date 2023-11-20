@@ -29,3 +29,6 @@
 ## Footnotes:
 - This project is based on the cdimage provided by `OrangeOS`.
 - Still **WIP** while the author hasn't finish the labs right now.
+
+## Known-bugs:
+- If compile failed while using `F5`, the `VSCode` debugger may get stuck, then you have to restart `VSCode`. So mkae sure you can pass compile before doing so, you can check that by pressing `Ctrl + Shift + B`.

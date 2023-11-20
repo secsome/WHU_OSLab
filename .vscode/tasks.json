@@ -3,6 +3,15 @@
 	"tasks": [
 		{
 			"type": "shell",
+			"label": "(Build) Make kernel final",
+			"command": "make final",
+			"group": {
+				"kind": "build",
+				"isDefault": true
+			}
+		},
+		{
+			"type": "shell",
 			"label": "(Build) Make kernel image",
 			"command": "make image",
 			"group": "build"

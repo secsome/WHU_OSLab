@@ -38,13 +38,19 @@ typedef struct process_t
 } process_t;
 
 extern process_t* p_proc_ready;
-#define NUM_TASKS 3
+enum
+{
+    NUM_TASKS = 3
+};
 extern process_t proc_table[NUM_TASKS];
 
-#define STACK_SIZE_TESTA 0x8000
-#define STACK_SIZE_TESTB 0x8000
-#define STACK_SIZE_TESTC 0x8000
-#define STACK_SIZE_TOTAL STACK_SIZE_TESTA + STACK_SIZE_TESTB + STACK_SIZE_TESTC
+enum
+{
+    STACK_SIZE_TESTA = 0x8000,
+    STACK_SIZE_TESTB = 0x8000,
+    STACK_SIZE_TESTC = 0x8000,
+    STACK_SIZE_TOTAL = STACK_SIZE_TESTA + STACK_SIZE_TESTB + STACK_SIZE_TESTC
+};
 extern char task_stack[STACK_SIZE_TOTAL];
 
 extern int k_reenter;

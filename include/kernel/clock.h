@@ -1,12 +1,14 @@
 #pragma once
 
-/* 8253/8254 PIT (Programmable Interval Timer) */
-#define TIMER0         0x40 /* I/O port for timer channel 0 */
-#define TIMER_MODE     0x43 /* I/O port for timer mode control */
-#define RATE_GENERATOR 0x34 /* 00-11-010-0 :
-			     * Counter0 - LSB then MSB - rate generator - binary
-			     */
-#define TIMER_FREQ     1193182L/* clock frequency for timer in PC and AT */
-#define HZ             100  /* clock freq (software settable on IBM-PC) */
+// 8253/8254 PIT (Programmable Interval Timer)
+enum 
+{
+	CLOCK_TIMER0 = 0x40,			// I/O port for timer channel 0
+	CLOCK_TIMER_MODE = 0x43,		// I/O port for timer mode control
+	CLOCK_RATE_GENERATOR = 0x34,	// 00-11-010-0, Counter0 - LSB then MSB - rate generator - binary
+	CLOCK_TIMER_FREQ = 1193182L,	// clock frequency for timer in PC and AT
+	CLOCK_HZ = 100					// clock freq (software settable on IBM-PC)
+};
 
+void init_clock();
 void clock_handler(int irq);

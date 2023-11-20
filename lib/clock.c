@@ -5,7 +5,7 @@
 void usleep(int millisecond)
 {
     int t = lib_get_ticks();
-    while(((lib_get_ticks() - t) * 1000 / HZ) < millisecond) {}
+    while(((lib_get_ticks() - t) * 1000 / CLOCK_HZ) < millisecond) {}
 }
 
 void sleep(int second)
