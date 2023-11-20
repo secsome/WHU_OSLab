@@ -4,23 +4,23 @@
 
 int disp_pos;
 
-PUBLIC void disp_reset()
+void disp_reset()
 {
 	disp_pos = 0;
 }
 
-PUBLIC void disp_setpos(int pos)
+void disp_setpos(int pos)
 {
 	disp_pos = pos;
 }
 
-PUBLIC void disp_clear()
+void disp_clear()
 {
 	for (int i = 0; i < 2 * 80 * 25; i += 4)
 		write_gs_dword(i, 0);
 }
 
-PUBLIC void disp_clearlines(int line_count)
+void disp_clearlines(int line_count)
 {
 	for (int i = 0; i < 2 * 80 * line_count; i += 4)
 		write_gs_dword(i, 0);
@@ -40,6 +40,9 @@ void disp_str(const char* info)
 	value.color = 0xF;
 	for (;;)
 	{
+		if (disp_pos == 2 * 80 * 25)
+			disp_pos = 0;
+
 		value.ch = *info++;
 		if (value.ch == NULL)
 			break;
@@ -67,6 +70,9 @@ void disp_color_str(const char* info, int color)
 	value.color = color;
 	for (;;)
 	{
+		if (disp_pos == 2 * 80 * 25)
+			disp_pos = 0;
+			
 		value.ch = *info++;
 		if (value.ch == NULL)
 			break;
@@ -80,7 +86,7 @@ void disp_color_str(const char* info, int color)
 	}
 }
 
-PUBLIC char* itoa(unsigned long value, char *buflim, unsigned int base, bool upper_case)
+char* itoa(unsigned long value, char *buflim, unsigned int base, bool upper_case)
 {
     static const char _itoa_upper_digits[] = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
     static const char _itoa_lower_digits[] = "0123456789abcdefghijklmnopqrstuvwxyz";
@@ -97,7 +103,7 @@ PUBLIC char* itoa(unsigned long value, char *buflim, unsigned int base, bool upp
 }
 
 
-PUBLIC void disp_int(int input)
+void disp_int(int input)
 {
 	char buffer[0x100] = { 0 };
 	char* p = itoa(input, buffer + sizeof(buffer) - 1, 16, false);

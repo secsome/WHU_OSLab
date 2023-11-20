@@ -1,6 +1,6 @@
 #include <lib/asm.h>
 
-PUBLIC NAKED void out_byte(u16 port, u8 value)
+NAKED void out_byte(u16 port, u8 value)
 {
 	asm volatile
 	(
@@ -13,7 +13,7 @@ PUBLIC NAKED void out_byte(u16 port, u8 value)
 	);
 }
 
-PUBLIC NAKED u8 in_byte(u16 port)
+NAKED u8 in_byte(u16 port)
 {
 	asm volatile
 	(
@@ -26,7 +26,7 @@ PUBLIC NAKED u8 in_byte(u16 port)
 	);
 }
 
-PUBLIC inline void write_gs_byte(u32 pos, u8 value)
+inline void write_gs_byte(u32 pos, u8 value)
 {
 	asm
 	(
@@ -34,7 +34,7 @@ PUBLIC inline void write_gs_byte(u32 pos, u8 value)
 	);
 }
 
-PUBLIC inline void write_gs_word(u32 pos, u16 value)
+inline void write_gs_word(u32 pos, u16 value)
 {
 	asm
 	(
@@ -42,7 +42,7 @@ PUBLIC inline void write_gs_word(u32 pos, u16 value)
 	);
 }
 
-PUBLIC inline void write_gs_dword(u32 pos, u32 value)
+inline void write_gs_dword(u32 pos, u32 value)
 {
 	asm
 	(
@@ -50,7 +50,7 @@ PUBLIC inline void write_gs_dword(u32 pos, u32 value)
 	);
 }
 
-PUBLIC void load_gdt(u32 address)
+void load_gdt(u32 address)
 {
 	asm
 	(
@@ -58,7 +58,7 @@ PUBLIC void load_gdt(u32 address)
 	);
 }
 
-PUBLIC void save_gdt(u32 address)
+void save_gdt(u32 address)
 {
 	asm
 	(
@@ -66,7 +66,7 @@ PUBLIC void save_gdt(u32 address)
 	);
 }
 
-PUBLIC void load_idt(u32 address)
+void load_idt(u32 address)
 {
 	asm
 	(
@@ -74,7 +74,7 @@ PUBLIC void load_idt(u32 address)
 	);
 }
 
-PUBLIC void save_idt(u32 address)
+void save_idt(u32 address)
 {
 	asm
 	(

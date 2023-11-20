@@ -10,8 +10,9 @@ char pusheen_os[] = {
 "(__)  (______)(___/(_) (_)(____)(____)(_)\\_)  (_____)(___/\n"
 };
 
-PUBLIC void cstart()
+void cstart()
 {
+	disp_reset();
 	disp_str("\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
                  "-----\"cstart\" begins-----\n");
 

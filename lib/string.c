@@ -1,6 +1,6 @@
 #include <lib/string.h>
 
-PUBLIC void* memcpy(void* dest, const void* src, size_t n)
+void* memcpy(void* dest, const void* src, size_t n)
 {
     u8* pdst = (u8*)dest;
     u8* psrc = (u8*)src;
@@ -11,7 +11,7 @@ PUBLIC void* memcpy(void* dest, const void* src, size_t n)
     return dest;
 }
 
-PUBLIC void* memset(void* s, int c, size_t n)
+void* memset(void* s, int c, size_t n)
 {
     u8* ptr = (u8*)s;
     

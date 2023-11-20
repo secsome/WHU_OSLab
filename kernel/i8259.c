@@ -7,7 +7,7 @@
 #define INT_S_CTL     0xA0 /* I/O port for second interrupt controller<Slave>  */
 #define INT_S_CTLMASK 0xA1 /* setting bits in this port disables ints <Slave>  */
 
-PUBLIC void init_8259A()
+void init_8259A()
 {
 	/* Master 8259, ICW1. */
 	out_byte(INT_M_CTL,	0x11);
@@ -40,7 +40,7 @@ PUBLIC void init_8259A()
 	out_byte(INT_S_CTLMASK,	0xFF);
 }
 
-PUBLIC void spurious_irq(int irq)
+void spurious_irq(int irq)
 {
     disp_str("spurious_irq: ");
     disp_int(irq);

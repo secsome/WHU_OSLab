@@ -1,15 +1,26 @@
-SELECTOR_KERNEL_CS	equ	8
+%include "sconst.inc"
 
 ; 导入函数
 extern	cstart
+extern	kernel_main
 extern	exception_handler
 extern	spurious_irq
+extern	disp_str
+extern	delay
+
 
 ; 导入全局变量
 extern	gdt_ptr
 extern	idt_ptr
+extern	p_proc_ready
+extern	tss
 extern	disp_pos
-extern	kernel_main
+extern	k_reenter
+
+bits 32
+
+[SECTION .data]
+clock_int_msg		db	"^", 0
 
 [SECTION .bss]
 StackSpace		resb	2 * 1024
@@ -51,11 +62,10 @@ global  hwint12
 global  hwint13
 global  hwint14
 global  hwint15
+global	restart
 
 _start:
 	mov	esp, StackTop
-
-	mov	dword [disp_pos], 0
 
 	sgdt	[gdt_ptr]
 	call	cstart
@@ -67,6 +77,10 @@ _start:
 
 csinit:
 
+	xor	eax, eax
+	mov	ax, SELECTOR_TSS
+	ltr	ax
+	
 	jmp kernel_main
 
 ; 中断和异常 -- 硬件中断
@@ -80,7 +94,54 @@ csinit:
 ; ---------------------------------
 
 ALIGN   16
-hwint00:                ; Interrupt routine for irq 0 (the clock).
+hwint00:		; Interrupt routine for irq 0 (the clock).
+	sub	esp, 4
+	pushad		; `.
+	push	ds	;  |
+	push	es	;  | 保存原寄存器值
+	push	fs	;  |
+	push	gs	; /
+	mov	dx, ss
+	mov	ds, dx
+	mov	es, dx
+
+	inc	byte [gs:0]		; 改变屏幕第 0 行, 第 0 列的字符
+
+	mov	al, EOI			; `. reenable
+	out	INT_M_CTL, al		; /  master 8259
+
+	inc	dword [k_reenter]
+	cmp	dword [k_reenter], 0
+	jne	.re_enter
+	
+	mov	esp, StackTop		; 切到内核栈
+
+	sti
+	
+	push	clock_int_msg
+	call	disp_str
+	add	esp, 4
+
+;;; 	push	1
+;;; 	call	delay
+;;; 	add	esp, 4
+	
+	cli
+	
+	mov	esp, [p_proc_ready]	; 离开内核栈
+
+	lea	eax, [esp + P_STACKTOP]
+	mov	dword [tss + TSS3_S_SP0], eax
+
+.re_enter:	; 如果(k_reenter != 0)，会跳转到这里
+	dec	dword [k_reenter]
+	pop	gs	; `.
+	pop	fs	;  |
+	pop	es	;  | 恢复原寄存器值
+	pop	ds	;  |
+	popad		; /
+	add	esp, 4
+
 	iretd
 
 ALIGN   16
@@ -218,3 +279,16 @@ exception:
 	call	exception_handler
 	add	esp, 4*2	; 让栈顶指向 EIP，堆栈中从顶向下依次是：EIP、CS、EFLAGS
 	hlt
+
+restart:
+	mov	esp, [p_proc_ready]
+	lldt	[esp + P_LDT_SEL] 
+	lea	eax, [esp + P_STACKTOP]
+	mov	dword [tss + TSS3_S_SP0], eax
+	pop	gs
+	pop	fs
+	pop	es
+	pop	ds
+	popad
+	add	esp, 4
+	iretd

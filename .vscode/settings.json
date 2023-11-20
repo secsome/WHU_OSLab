@@ -1,6 +1,5 @@
 {
     "files.associations": {
-        "*.asm": "asm-collection",
         "*.h": "c",
         "*.c": "c",
         "*.cpp": "cpp"
