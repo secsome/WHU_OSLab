@@ -12,15 +12,16 @@ CC		= gcc
 LD		= ld
 ASMBFLAGS	= -g -I boot/include/
 ASMKFLAGS	= -g -I include/kernel/ -f elf
-CFLAGS		= -g -masm=intel -m32 -fno-stack-protector -I include/ -c -fno-builtin
-LDFLAGS		= -melf_i386 -Ttext $(ENTRYPOINT)
+CFLAGS		= -g -O3 -fno-pie -masm=intel -m32 -fno-stack-protector -I include/ -c -fno-builtin
+LDFLAGS		= -melf_i386 -flto=thin -O3 -Ttext $(ENTRYPOINT)
 DASMFLAGS	= -u -o $(ENTRYPOINT) -e $(ENTRYOFFSET)
 
 # This Program
 ORANGESBOOT	= boot/boot.bin boot/loader.bin
 ORANGESKERNEL	= kernel.bin
 OBJS		= 	kernel/kernel.o kernel/start.o kernel/i8259.o kernel/global.o kernel/protect.o kernel/proc.o kernel/clock.o \
-				lib/asm.o lib/string.o lib/strings.o lib/display.o
+				kernel/syscall.o \
+				lib/asm.o lib/string.o lib/strings.o lib/display.o lib/syscall.o lib/clock.o lib/crc.o
 DASMOUTPUT	= kernel.bin.asm
 
 # All Phony Targets
@@ -69,6 +70,9 @@ kernel/%.o : kernel/%.asm*
 
 kernel/%.o: kernel/%.c*
 	$(CC) $(CFLAGS) -o $@ $<
+
+lib/%.o : lib/%.asm*
+	$(ASM) $(ASMKFLAGS) -o $@ $<
 
 lib/%.o: lib/%.c*
 	$(CC) $(CFLAGS) -o $@ $<

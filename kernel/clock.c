@@ -1,9 +1,12 @@
 #include <kernel/clock.h>
 #include <kernel/proc.h>
+#include <kernel/syscall.h>
 #include <lib/display.h>
 
 void clock_handler(int irq)
 {
+    ++sys_tick_count;
+
     if (k_reenter != 0)
         return;
 

@@ -9,7 +9,7 @@
 
 void fake_irq(int irq)
 {
-    disp_str("spurious_irq: ");
+    disp_str("fake_irq: ");
     disp_int(irq);
     disp_str("\n");
 }

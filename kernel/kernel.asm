@@ -9,6 +9,7 @@ extern	disp_str
 extern	delay
 extern	clock_handler
 extern	irq_table
+extern	sys_call_table
 
 
 ; 导入全局变量
@@ -64,6 +65,7 @@ global  hwint12
 global  hwint13
 global  hwint14
 global  hwint15
+global	sys_call
 global	restart
 
 _start:
@@ -247,27 +249,33 @@ exception:
 	hlt
 
 save:
-        pushad          ; `.
-        push    ds      ;  |
-        push    es      ;  | 保存原寄存器值
-        push    fs      ;  |
-        push    gs      ; /
-        mov     dx, ss
-        mov     ds, dx
-        mov     es, dx
+    pushad          ; `.
+    push    ds      ;  |
+    push    es      ;  | 保存原寄存器值
+    push    fs      ;  |
+    push    gs      ; /
+    mov     dx, ss
+    mov     ds, dx
+    mov     es, dx
+    mov     esi, esp                    ; esi = 进程表起始地址
+    inc     dword [k_reenter]           ; k_reenter++;
+    cmp     dword [k_reenter], 0        ; if(k_reenter ==0)
+    jne     .1                          ; {
+    mov     esp, StackTop               ;   mov esp, StackTop <--切换到内核栈
+    push    restart                     ;   push restart
+    jmp     [esi + RETADR - P_STACKBASE];   return;
+.1:                                     ; } else { 已经在内核栈，不需要再切换
+    push    restart_reenter             ;   push restart_reenter
+    jmp     [esi + RETADR - P_STACKBASE];   return;
+                                        ; }
 
-        mov     esi, esp                    ;esi = 进程表起始地址
-
-        inc     dword [k_reenter]           ;k_reenter++;
-        cmp     dword [k_reenter], 0        ;if(k_reenter ==0)
-        jne     .1                          ;{
-        mov     esp, StackTop               ;  mov esp, StackTop <--切换到内核栈
-        push    restart                     ;  push restart
-        jmp     [esi + RETADR - P_STACKBASE];  return;
-.1:                                         ;} else { 已经在内核栈，不需要再切换
-        push    restart_reenter             ;  push restart_reenter
-        jmp     [esi + RETADR - P_STACKBASE];  return;
-                                            ;}
+sys_call:
+	call save
+	sti
+	call [sys_call_table + eax * 4]
+	mov [esi + EAXREG - P_STACKBASE], eax
+	cli
+	ret
 
 restart:
 	mov	esp, [p_proc_ready]

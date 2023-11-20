@@ -1,9 +1,13 @@
 #include <kernel/proc.h>
 #include <kernel/global.h>
 #include <kernel/clock.h>
+#include <kernel/syscall.h>
 
+#include <lib/asm.h>
+#include <lib/syscall.h>
 #include <lib/string.h>
 #include <lib/display.h>
+#include <lib/clock.h>
 
 void TestA();
 void TestB();
@@ -32,16 +36,6 @@ task_t task_table[NUM_TASKS] =
 	}
 };
 
-void delay(int time)
-{
-    for (int t = 0; t < time; ++t)
-    {
-        for (int i = 0; i < 10000000; ++i)
-        {
-        }
-    }
-}
-
 void TestA()
 {
     int i = 0;
@@ -49,7 +43,7 @@ void TestA()
     {
         disp_str(" ");
         disp_color_int(i++, 0xC);
-        delay(1);
+		usleep(1000);
     }
 }
 
@@ -60,7 +54,7 @@ void TestB()
     {
         disp_str(" ");
         disp_color_int(i++, 0xD);
-        delay(1);
+        usleep(1000);
     }
 }
 
@@ -71,7 +65,7 @@ void TestC()
     {
         disp_str(" ");
         disp_color_int(i++, 0xE);
-        delay(1);
+        usleep(1000);
     }
 }
 
@@ -79,6 +73,8 @@ extern void restart();
 int kernel_main()
 {
     disp_str("-----\"kernel_main\" begins-----\n");
+
+	sys_tick_count = 0;
 
 	task_t* p_task = task_table;
 	process_t* p_proc = proc_table;
@@ -113,6 +109,10 @@ int kernel_main()
 	k_reenter = 0;
 
 	p_proc_ready = proc_table; 
+
+	out_byte(TIMER_MODE, RATE_GENERATOR);
+    out_byte(TIMER0, (u8) (TIMER_FREQ/HZ) );
+    out_byte(TIMER0, (u8) ((TIMER_FREQ/HZ) >> 8));
 
 	put_irq_handler(CLOCK_IRQ, clock_handler);
 	enable_irq(CLOCK_IRQ);

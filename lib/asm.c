@@ -28,7 +28,7 @@ NAKED u8 in_byte(u16 port)
 
 inline void write_gs_byte(u32 pos, u8 value)
 {
-	asm
+	asm volatile
 	(
 		"mov gs:[%0], %1" : "+r"(pos) : "ri"(value)
 	);
@@ -36,7 +36,7 @@ inline void write_gs_byte(u32 pos, u8 value)
 
 inline void write_gs_word(u32 pos, u16 value)
 {
-	asm
+	asm volatile
 	(
 		"mov gs:[%0], %1" : "+r"(pos) : "ri"(value)
 	);
@@ -44,7 +44,7 @@ inline void write_gs_word(u32 pos, u16 value)
 
 inline void write_gs_dword(u32 pos, u32 value)
 {
-	asm
+	asm volatile
 	(
 		"mov gs:[%0], %1" : "+r"(pos) : "ri"(value)
 	);
@@ -52,7 +52,7 @@ inline void write_gs_dword(u32 pos, u32 value)
 
 void load_gdt(u32 address)
 {
-	asm
+	asm volatile
 	(
 		"lgdt [%0]" : "+r"(address)
 	);
@@ -60,7 +60,7 @@ void load_gdt(u32 address)
 
 void save_gdt(u32 address)
 {
-	asm
+	asm volatile
 	(
 		"sgdt [%0]" : "=r"(address)
 	);
@@ -68,7 +68,7 @@ void save_gdt(u32 address)
 
 void load_idt(u32 address)
 {
-	asm
+	asm volatile
 	(
 		"lidt [%0]" : "+r"(address)
 	);
@@ -76,7 +76,7 @@ void load_idt(u32 address)
 
 void save_idt(u32 address)
 {
-	asm
+	asm volatile
 	(
 		"sidt [%0]" : "=r"(address)
 	);

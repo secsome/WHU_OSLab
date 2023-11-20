@@ -1,5 +1,6 @@
 #include <kernel/protect.h>
 #include <kernel/global.h>
+#include <kernel/syscall.h>
 #include <lib/display.h>
 #include <lib/string.h>
 
@@ -43,6 +44,7 @@ void hwint15();
 
 irq_handler irq_table[NUM_IRQ];
 
+void sys_call();
 void init_prot()
 {
 	init_8259A();
@@ -79,6 +81,9 @@ void init_prot()
     init_idt_desc(INT_VECTOR_IRQ8 + 5,      DA_386IGate, hwint13,				PRIVILEGE_KRNL);
     init_idt_desc(INT_VECTOR_IRQ8 + 6,      DA_386IGate, hwint14,				PRIVILEGE_KRNL);
     init_idt_desc(INT_VECTOR_IRQ8 + 7,      DA_386IGate, hwint15,				PRIVILEGE_KRNL);
+
+	// initialize syscall
+	init_idt_desc(SYSCALL_NUMINT, DA_386IGate, sys_call, PRIVILEGE_USER);
 
 	/* 填充 GDT 中 TSS 这个描述符 */
 	memset(&tss, 0, sizeof(tss));
