@@ -19,3 +19,7 @@ In `Visual Studio Code`, Press `F5` to launch the simulation. `Ctrl + Shift + B`
 - Full source code debug, both .asm and .c files are supported
 - Rearranged code structure
 - One-click deployment
+
+## Footnotes:
+- This project is based on the cdimage provided by `OrangeOS`.
+- Still WIP while the author hasn't finish the labs right now.

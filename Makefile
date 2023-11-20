@@ -17,8 +17,8 @@ LDFLAGS		= -melf_i386 -flto=thin -Ttext $(ENTRYPOINT)
 DASMFLAGS	= -u -o $(ENTRYPOINT) -e $(ENTRYOFFSET)
 
 # This Program
-ORANGESBOOT	= boot/boot.bin boot/loader.bin
-ORANGESKERNEL	= kernel.bin
+BINBOOT	= boot/boot.bin boot/loader.bin
+BINKERNEL	= kernel.bin
 OBJS		= 	kernel/kernel.o kernel/start.o kernel/i8259.o kernel/global.o kernel/protect.o kernel/proc.o kernel/clock.o \
 				kernel/syscall.o \
 				lib/asm.o lib/string.o lib/strings.o lib/display.o lib/syscall.o lib/clock.o lib/crc.o lib/ctype.o
@@ -28,7 +28,7 @@ DASMOUTPUT	= kernel.bin.asm
 .PHONY : everything final image clean realclean disasm all buildimg
 
 # Default starting position
-everything : $(ORANGESBOOT) $(ORANGESKERNEL)
+everything : $(BINBOOT) $(BINKERNEL)
 
 all : realclean everything
 
@@ -40,11 +40,11 @@ clean :
 	rm -f $(OBJS)
 
 realclean :
-	rm -f $(OBJS) $(ORANGESBOOT) $(ORANGESKERNEL)
+	rm -f $(OBJS) $(BINBOOT) $(BINKERNEL)
 	rm -rf ./floppy
 
 disasm :
-	$(DASM) $(DASMFLAGS) $(ORANGESKERNEL) > $(DASMOUTPUT)
+	$(DASM) $(DASMFLAGS) $(BINKERNEL) > $(DASMOUTPUT)
 
 # We assume that "a.img" exists in current folder
 buildimg :
@@ -62,8 +62,8 @@ boot/loader.bin : boot/loader.asm boot/include/load.inc \
 			boot/include/fat12hdr.inc boot/include/pm.inc
 	$(ASM) $(ASMBFLAGS) -o $@ $<
 
-$(ORANGESKERNEL) : $(OBJS)
-	$(LD) $(LDFLAGS) -o $(ORANGESKERNEL) $(OBJS)
+$(BINKERNEL) : $(OBJS)
+	$(LD) $(LDFLAGS) -o $(BINKERNEL) $(OBJS)
 
 kernel/%.o : kernel/%.asm*
 	$(ASM) $(ASMKFLAGS) -o $@ $<
