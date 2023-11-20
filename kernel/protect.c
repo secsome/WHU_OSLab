@@ -1,6 +1,6 @@
-#include "kernel/protect.h"
-#include "kernel/global.h"
-#include "lib/display.h"
+#include <kernel/protect.h>
+#include <kernel/global.h>
+#include <lib/display.h>
 
 /* 本文件内函数声明 */
 PRIVATE void init_idt_desc(unsigned char vector, u8 desc_type, int_handler handler, unsigned char privilege);
@@ -79,7 +79,7 @@ PUBLIC void init_prot()
 
 PRIVATE void init_idt_desc(unsigned char vector, u8 desc_type, int_handler handler, unsigned char privilege)
 {
-	GATE* p_gate = &idt[vector];
+	gate_t* p_gate = &idt[vector];
 	u32 base = (u32)handler;
 	p_gate->offset_low	= base & 0xFFFF;
 	p_gate->selector	= SELECTOR_KERNEL_CS;

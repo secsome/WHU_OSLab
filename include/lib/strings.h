@@ -1,7 +1,7 @@
 #pragma once
 
-#include "kernel/const.h"
-#include "kernel/type.h"
+#include <kernel/const.h>
+#include <kernel/type.h>
 
 // STRING(3)
 // Compare the strings s1 and s2 ignoring case.

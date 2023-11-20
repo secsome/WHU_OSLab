@@ -9,7 +9,7 @@ extern	spurious_irq
 extern	gdt_ptr
 extern	idt_ptr
 extern	disp_pos
-
+extern	kernel_main
 
 [SECTION .bss]
 StackSpace		resb	2 * 1024
@@ -64,10 +64,10 @@ _start:
 	lidt	[idt_ptr]
 
 	jmp	SELECTOR_KERNEL_CS:csinit
-csinit:
-	sti
-	hlt
 
+csinit:
+
+	jmp kernel_main
 
 ; 中断和异常 -- 硬件中断
 ; ---------------------------------
@@ -81,7 +81,7 @@ csinit:
 
 ALIGN   16
 hwint00:                ; Interrupt routine for irq 0 (the clock).
-        hwint_master    0
+	iretd
 
 ALIGN   16
 hwint01:                ; Interrupt routine for irq 1 (keyboard)

@@ -1,4 +1,4 @@
-#include "lib/asm.h"
+#include <lib/asm.h>
 
 PUBLIC NAKED void out_byte(u16 port, u8 value)
 {

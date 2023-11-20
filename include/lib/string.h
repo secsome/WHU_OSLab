@@ -1,7 +1,7 @@
 #pragma once
 
-#include "kernel/const.h"
-#include "kernel/type.h"
+#include <kernel/const.h>
+#include <kernel/type.h>
 
 PUBLIC void* memcpy(void* p_dst, const void* p_src, size_t size);
 

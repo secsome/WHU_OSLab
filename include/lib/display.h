@@ -1,6 +1,6 @@
 #pragma once
 
-#include "kernel/proto.h"
+#include <kernel/proto.h>
 
 PUBLIC void disp_reset();
 PUBLIC void disp_setpos(int pos);

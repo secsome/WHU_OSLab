@@ -1,7 +1,7 @@
 #pragma once
 
-#include "kernel/const.h"
-#include "kernel/type.h"
+#include <kernel/const.h>
+#include <kernel/type.h>
 
 PUBLIC void	init_prot();
 PUBLIC void	init_8259A();
