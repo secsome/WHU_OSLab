@@ -2,9 +2,10 @@
 武汉大学信息安全操作系统实验
 
 ## Requirements:
+- Ubuntu >= 20.04
 - gcc
 - gdb
-- nasm > 2.15.5
+- nasm >= 2.15.5
 - Makefile
 - VSCode Extensions:
   - asm-enable-debug
