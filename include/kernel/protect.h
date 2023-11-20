@@ -61,6 +61,25 @@ typedef struct tss_t {
 u32 seg2phys(u16 seg);
 #define vir2phys(seg_base, vir)	(u32)(((u32)seg_base) + (u32)(vir))
 
+// Hardware irqs
+#define	NUM_IRQ 16	/* Number of IRQs */
+#define	CLOCK_IRQ 0
+#define	KEYBOARD_IRQ 1
+#define	CASCADE_IRQ 2	/* cascade enable for 2nd AT controller */
+#define	ETHER_IRQ 3	/* default ethernet interrupt vector */
+#define	SECONDARY_IRQ 3	/* RS232 interrupt vector for port 2 */
+#define	RS232_IRQ 4	/* RS232 interrupt vector for port 1 */
+#define	XT_WINI_IRQ 5	/* xt winchester */
+#define	FLOPPY_IRQ 6	/* floppy disk */
+#define	PRINTER_IRQ 7
+#define	AT_WINI_IRQ 14	/* at winchester */
+typedef void (*irq_handler)(int irq);
+extern irq_handler irq_table[NUM_IRQ];
+
+void put_irq_handler(int irq, irq_handler handler);
+void enable_irq(int irq);
+void disable_irq(int irq);
+
 /* GDT */
 /* 描述符索引 */
 #define	INDEX_DUMMY		0	// ┓

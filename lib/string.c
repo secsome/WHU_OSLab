@@ -21,3 +21,26 @@ void* memset(void* s, int c, size_t n)
     return ptr;
 }
 
+char* strcpy(char* dest, const char* src)
+{
+    char* pdst = (char*)dest;
+    char* psrc = (char*)src;
+
+    while (*psrc)
+        *(pdst++) = *(psrc++);
+    *pdst = 0;
+    
+    return dest;
+}
+
+char* strncpy(char* dest, const char* src, size_t n)
+{
+    char* pdst = (char*)dest;
+    char* psrc = (char*)src;
+
+    while (*psrc && --n)
+        *(pdst++) = *(psrc++);
+    *pdst = 0;
+    
+    return dest;
+}

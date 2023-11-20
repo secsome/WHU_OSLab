@@ -3,7 +3,9 @@
 typedef	unsigned int    u32;
 typedef	unsigned short  u16;
 typedef	unsigned char   u8;
-typedef	void (*int_handler)();
+
+typedef void (*farproc_t)();
+
 typedef u32 size_t;
 typedef u8  bool;
 

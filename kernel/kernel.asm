@@ -4,9 +4,11 @@
 extern	cstart
 extern	kernel_main
 extern	exception_handler
-extern	spurious_irq
+extern	fake_irq
 extern	disp_str
 extern	delay
+extern	clock_handler
+extern	irq_table
 
 
 ; 导入全局变量
@@ -85,97 +87,61 @@ csinit:
 
 ; 中断和异常 -- 硬件中断
 ; ---------------------------------
-%macro  hwint_master    1
-        push    %1
-        call    spurious_irq
-        add     esp, 4
-        hlt
+%macro	hwint_master	1
+	call	save
+	in	al, INT_M_CTLMASK	; `.
+	or	al, (1 << %1)		;  | 屏蔽当前中断
+	out	INT_M_CTLMASK, al	; /
+	mov	al, EOI			; `. 置EOI位
+	out	INT_M_CTL, al		; /
+	sti	; CPU在响应中断的过程中会自动关中断，这句之后就允许响应新的中断
+	push	%1			; `.
+	call	[irq_table + 4 * %1]	;  | 中断处理程序
+	pop	ecx			; /
+	cli
+	in	al, INT_M_CTLMASK	; `.
+	and	al, ~(1 << %1)		;  | 恢复接受当前中断
+	out	INT_M_CTLMASK, al	; /
+	ret
 %endmacro
 ; ---------------------------------
 
-ALIGN   16
+ALIGN	16
 hwint00:		; Interrupt routine for irq 0 (the clock).
-	sub	esp, 4
-	pushad		; `.
-	push	ds	;  |
-	push	es	;  | 保存原寄存器值
-	push	fs	;  |
-	push	gs	; /
-	mov	dx, ss
-	mov	ds, dx
-	mov	es, dx
+	hwint_master	0
 
-	inc	byte [gs:0]		; 改变屏幕第 0 行, 第 0 列的字符
+ALIGN	16
+hwint01:		; Interrupt routine for irq 1 (keyboard)
+	hwint_master	1
 
-	mov	al, EOI			; `. reenable
-	out	INT_M_CTL, al		; /  master 8259
+ALIGN	16
+hwint02:		; Interrupt routine for irq 2 (cascade!)
+	hwint_master	2
 
-	inc	dword [k_reenter]
-	cmp	dword [k_reenter], 0
-	jne	.re_enter
-	
-	mov	esp, StackTop		; 切到内核栈
+ALIGN	16
+hwint03:		; Interrupt routine for irq 3 (second serial)
+	hwint_master	3
 
-	sti
-	
-	push	clock_int_msg
-	call	disp_str
-	add	esp, 4
+ALIGN	16
+hwint04:		; Interrupt routine for irq 4 (first serial)
+	hwint_master	4
 
-;;; 	push	1
-;;; 	call	delay
-;;; 	add	esp, 4
-	
-	cli
-	
-	mov	esp, [p_proc_ready]	; 离开内核栈
+ALIGN	16
+hwint05:		; Interrupt routine for irq 5 (XT winchester)
+	hwint_master	5
 
-	lea	eax, [esp + P_STACKTOP]
-	mov	dword [tss + TSS3_S_SP0], eax
+ALIGN	16
+hwint06:		; Interrupt routine for irq 6 (floppy)
+	hwint_master	6
 
-.re_enter:	; 如果(k_reenter != 0)，会跳转到这里
-	dec	dword [k_reenter]
-	pop	gs	; `.
-	pop	fs	;  |
-	pop	es	;  | 恢复原寄存器值
-	pop	ds	;  |
-	popad		; /
-	add	esp, 4
-
-	iretd
-
-ALIGN   16
-hwint01:                ; Interrupt routine for irq 1 (keyboard)
-        hwint_master    1
-
-ALIGN   16
-hwint02:                ; Interrupt routine for irq 2 (cascade!)
-        hwint_master    2
-
-ALIGN   16
-hwint03:                ; Interrupt routine for irq 3 (second serial)
-        hwint_master    3
-
-ALIGN   16
-hwint04:                ; Interrupt routine for irq 4 (first serial)
-        hwint_master    4
-
-ALIGN   16
-hwint05:                ; Interrupt routine for irq 5 (XT winchester)
-        hwint_master    5
-
-ALIGN   16
-hwint06:                ; Interrupt routine for irq 6 (floppy)
-        hwint_master    6
-
-ALIGN   16
-hwint07:                ; Interrupt routine for irq 7 (printer)
-        hwint_master    7
+ALIGN	16
+hwint07:		; Interrupt routine for irq 7 (printer)
+	hwint_master	7
 
 ; ---------------------------------
 %macro  hwint_slave     1
     push    %1
-    call    spurious_irq
+    call    fake_irq
     add     esp, 4
     hlt
 %endmacro
@@ -280,11 +246,36 @@ exception:
 	add	esp, 4*2	; 让栈顶指向 EIP，堆栈中从顶向下依次是：EIP、CS、EFLAGS
 	hlt
 
+save:
+        pushad          ; `.
+        push    ds      ;  |
+        push    es      ;  | 保存原寄存器值
+        push    fs      ;  |
+        push    gs      ; /
+        mov     dx, ss
+        mov     ds, dx
+        mov     es, dx
+
+        mov     esi, esp                    ;esi = 进程表起始地址
+
+        inc     dword [k_reenter]           ;k_reenter++;
+        cmp     dword [k_reenter], 0        ;if(k_reenter ==0)
+        jne     .1                          ;{
+        mov     esp, StackTop               ;  mov esp, StackTop <--切换到内核栈
+        push    restart                     ;  push restart
+        jmp     [esi + RETADR - P_STACKBASE];  return;
+.1:                                         ;} else { 已经在内核栈，不需要再切换
+        push    restart_reenter             ;  push restart_reenter
+        jmp     [esi + RETADR - P_STACKBASE];  return;
+                                            ;}
+
 restart:
 	mov	esp, [p_proc_ready]
 	lldt	[esp + P_LDT_SEL] 
 	lea	eax, [esp + P_STACKTOP]
 	mov	dword [tss + TSS3_S_SP0], eax
+restart_reenter:
+	dec dword [k_reenter]
 	pop	gs
 	pop	fs
 	pop	es

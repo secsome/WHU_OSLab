@@ -109,3 +109,10 @@ void disp_int(int input)
 	char* p = itoa(input, buffer + sizeof(buffer) - 1, 16, false);
 	disp_str(p);
 }
+
+void disp_color_int(int input, int color)
+{
+	char buffer[0x100] = { 0 };
+	char* p = itoa(input, buffer + sizeof(buffer) - 1, 16, false);
+	disp_color_str(p, color);
+}

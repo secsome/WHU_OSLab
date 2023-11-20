@@ -4,7 +4,7 @@
 #include <lib/string.h>
 
 /* 本文件内函数声明 */
-static void init_idt_desc(unsigned char vector, u8 desc_type, int_handler handler, unsigned char privilege);
+static void init_idt_desc(unsigned char vector, u8 desc_type, farproc_t handler, unsigned char privilege);
 static void init_descriptor(descriptor_t* p_desc, u32 base, u32 limit, u16 attribute);
 
 /* 中断处理函数 */
@@ -40,6 +40,8 @@ void hwint12();
 void hwint13();
 void hwint14();
 void hwint15();
+
+irq_handler irq_table[NUM_IRQ];
 
 void init_prot()
 {
@@ -88,10 +90,17 @@ void init_prot()
 	tss.iobase	= sizeof(tss);	/* 没有I/O许可位图 */
 
 	// 填充 GDT 中进程的 LDT 的描述符
-	init_descriptor(&gdt[INDEX_LDT_FIRST],
-			vir2phys(seg2phys(SELECTOR_KERNEL_DS), proc_table[0].ldts),
-			LDT_SIZE * sizeof(descriptor_t) - 1,
-			DA_LDT);
+	process_t* p_proc = proc_table;
+	u16 selector_ldt = INDEX_LDT_FIRST << 3;
+	for (int i = 0; i < NUM_TASKS; ++i)
+	{
+		init_descriptor(&gdt[selector_ldt>>3], 
+				vir2phys(seg2phys(SELECTOR_KERNEL_DS), proc_table[i].ldts),
+				LDT_SIZE * sizeof(descriptor_t) - 1,
+				DA_LDT);
+		++p_proc;
+		selector_ldt += 1 << 3;
+	}
 }
 
 u32 seg2phys(u16 seg)
@@ -101,7 +110,7 @@ u32 seg2phys(u16 seg)
 	return (p_dest->base_high << 24) | (p_dest->base_mid << 16) | (p_dest->base_low);
 }
 
-static void init_idt_desc(unsigned char vector, u8 desc_type, int_handler handler, unsigned char privilege)
+static void init_idt_desc(unsigned char vector, u8 desc_type, farproc_t handler, unsigned char privilege)
 {
 	gate_t* p_gate = &idt[vector];
 	u32 base = (u32)handler;

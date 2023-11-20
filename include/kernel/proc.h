@@ -36,11 +36,22 @@ typedef struct process_t
 } process_t;
 
 extern process_t* p_proc_ready;
-#define TASKCNT_MAX	3
-extern process_t proc_table[TASKCNT_MAX];
+#define NUM_TASKS 3
+extern process_t proc_table[NUM_TASKS];
 
 #define STACK_SIZE_TESTA 0x8000
-#define STACK_SIZE_TOTAL STACK_SIZE_TESTA
+#define STACK_SIZE_TESTB 0x8000
+#define STACK_SIZE_TESTC 0x8000
+#define STACK_SIZE_TOTAL STACK_SIZE_TESTA + STACK_SIZE_TESTB + STACK_SIZE_TESTC
 extern char task_stack[STACK_SIZE_TOTAL];
 
 extern int k_reenter;
+
+typedef struct task_t
+{
+    farproc_t initial_eip;
+    int stacksize;
+    char name[32];
+} task_t;
+
+extern task_t task_table[NUM_TASKS];

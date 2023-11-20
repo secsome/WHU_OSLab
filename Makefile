@@ -19,7 +19,8 @@ DASMFLAGS	= -u -o $(ENTRYPOINT) -e $(ENTRYOFFSET)
 # This Program
 ORANGESBOOT	= boot/boot.bin boot/loader.bin
 ORANGESKERNEL	= kernel.bin
-OBJS		= kernel/kernel.o kernel/start.o kernel/i8259.o kernel/global.o kernel/protect.o kernel/proc.o lib/asm.o lib/string.o lib/strings.o lib/display.o
+OBJS		= 	kernel/kernel.o kernel/start.o kernel/i8259.o kernel/global.o kernel/protect.o kernel/proc.o kernel/clock.o \
+				lib/asm.o lib/string.o lib/strings.o lib/display.o
 DASMOUTPUT	= kernel.bin.asm
 
 # All Phony Targets
@@ -63,32 +64,11 @@ boot/loader.bin : boot/loader.asm boot/include/load.inc \
 $(ORANGESKERNEL) : $(OBJS)
 	$(LD) $(LDFLAGS) -o $(ORANGESKERNEL) $(OBJS)
 
-kernel/kernel.o : kernel/kernel.asm
+kernel/%.o : kernel/%.asm*
 	$(ASM) $(ASMKFLAGS) -o $@ $<
 
-kernel/start.o: kernel/start.c
+kernel/%.o: kernel/%.c*
 	$(CC) $(CFLAGS) -o $@ $<
 
-kernel/i8259.o : kernel/i8259.c
-	$(CC) $(CFLAGS) -o $@ $<
-
-kernel/global.o : kernel/global.c
-	$(CC) $(CFLAGS) -o $@ $<
-
-kernel/protect.o : kernel/protect.c
-	$(CC) $(CFLAGS) -o $@ $<
-
-kernel/proc.o : kernel/proc.c
-	$(CC) $(CFLAGS) -o $@ $<
-
-lib/asm.o : lib/asm.c
-	$(CC) $(CFLAGS) -o $@ $<
-
-lib/string.o : lib/string.c
-	$(CC) $(CFLAGS) -o $@ $<
-
-lib/strings.o : lib/strings.c
-	$(CC) $(CFLAGS) -o $@ $<
-
-lib/display.o : lib/display.c
+lib/%.o: lib/%.c*
 	$(CC) $(CFLAGS) -o $@ $<

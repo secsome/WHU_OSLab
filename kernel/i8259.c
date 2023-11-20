@@ -7,6 +7,35 @@
 #define INT_S_CTL     0xA0 /* I/O port for second interrupt controller<Slave>  */
 #define INT_S_CTLMASK 0xA1 /* setting bits in this port disables ints <Slave>  */
 
+void fake_irq(int irq)
+{
+    disp_str("spurious_irq: ");
+    disp_int(irq);
+    disp_str("\n");
+}
+
+void enable_irq(int irq)
+{
+	if (irq < 8)
+		out_byte(INT_M_CTLMASK, in_byte(INT_M_CTLMASK) & ~(1 << irq));
+	else
+		out_byte(INT_S_CTLMASK, in_byte(INT_S_CTLMASK) & ~(1 << irq));
+}
+
+void disable_irq(int irq)
+{
+	if (irq < 8)
+		out_byte(INT_M_CTLMASK, in_byte(INT_M_CTLMASK) | (1 << irq));
+	else
+		out_byte(INT_S_CTLMASK, in_byte(INT_S_CTLMASK) | (1 << irq));
+}
+
+void put_irq_handler(int irq, irq_handler handler)
+{
+	disable_irq(irq);
+	irq_table[irq] = handler;
+}
+
 void init_8259A()
 {
 	out_byte(INT_M_CTL,	0x11);			// Master 8259, ICW1.
@@ -18,13 +47,9 @@ void init_8259A()
 	out_byte(INT_M_CTLMASK,	0x1);			// Master 8259, ICW4.
 	out_byte(INT_S_CTLMASK,	0x1);			// Slave  8259, ICW4.
 
-	out_byte(INT_M_CTLMASK,	0xFE);	// Master 8259, OCW1. 
+	out_byte(INT_M_CTLMASK,	0xFF);	// Master 8259, OCW1. 
 	out_byte(INT_S_CTLMASK,	0xFF);	// Slave  8259, OCW1. 
-}
 
-void spurious_irq(int irq)
-{
-    disp_str("spurious_irq: ");
-    disp_int(irq);
-    disp_str("\n");
+	for (int i = 0; i < NUM_IRQ; ++i)
+		irq_table[i] = fake_irq;
 }
