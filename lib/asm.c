@@ -49,3 +49,35 @@ PUBLIC inline void write_gs_dword(u32 pos, u32 value)
 		"mov gs:[%0], %1" : "+r"(pos) : "ri"(value)
 	);
 }
+
+PUBLIC void load_gdt(u32 address)
+{
+	asm
+	(
+		"lgdt [%0]" : "+r"(address)
+	);
+}
+
+PUBLIC void save_gdt(u32 address)
+{
+	asm
+	(
+		"sgdt [%0]" : "=r"(address)
+	);
+}
+
+PUBLIC void load_idt(u32 address)
+{
+	asm
+	(
+		"lidt [%0]" : "+r"(address)
+	);
+}
+
+PUBLIC void save_idt(u32 address)
+{
+	asm
+	(
+		"sidt [%0]" : "=r"(address)
+	);
+}

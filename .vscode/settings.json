@@ -1,8 +1,8 @@
 {
     "files.associations": {
-        "type.h": "c",
-        "string.h": "c",
-        "const.h": "c",
-        "display.h": "c"
+        "*.asm": "asm-collection",
+        "*.h": "c",
+        "*.c": "c",
+        "*.cpp": "cpp"
     }
 }
