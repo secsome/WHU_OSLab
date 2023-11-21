@@ -170,8 +170,6 @@ char* strpbrk(const char* s, const char* accept)
 
 char* strrchr(const char* s, int c)
 {
-    char* save;
-
 	for (char* save = NULL; ; ++s) 
     {
 		if (*s == c)

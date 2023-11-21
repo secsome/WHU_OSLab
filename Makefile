@@ -12,7 +12,7 @@ CC		= gcc
 LD		= ld
 ASMBFLAGS	= -g -I boot/include/
 ASMKFLAGS	= -g -I include/kernel/ -f elf
-CFLAGS		= -g -fno-pie -masm=intel -m32 -fno-stack-protector -I include/ -c -fno-builtin
+CFLAGS		= -g -Wall -fno-pie -masm=intel -m32 -fno-stack-protector -I include/ -c -fno-builtin
 LDFLAGS		= -melf_i386 -flto=thin -Ttext $(ENTRYPOINT)
 DASMFLAGS	= -u -o $(ENTRYPOINT) -e $(ENTRYOFFSET)
 
