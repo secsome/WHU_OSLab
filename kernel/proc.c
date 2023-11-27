@@ -40,7 +40,7 @@ void TestA()
 {
     while (true)
     {
-        disp_color_str("A.", 0xC);
+        // disp_color_str("A.", 0xC);
 		usleep(10);
     }
 }
@@ -49,7 +49,7 @@ void TestB()
 {
     while (true)
     {
-        disp_color_str("B.", 0xD);
+        // disp_color_str("B.", 0xD);
         usleep(10);
     }
 }
@@ -58,7 +58,7 @@ void TestC()
 {
     while (true)
     {
-        disp_color_str("C.", 0xE);
+        // disp_color_str("C.", 0xE);
         usleep(10);
     }
 }
