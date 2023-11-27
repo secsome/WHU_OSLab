@@ -1,9 +1,14 @@
 #include <kernel/keyboard.h>
+#include <kernel/tty.h>
 #include <kernel/protect.h>
 #include <lib/display.h>
 #include <lib/asm.h>
 
 static keyboard_t keyboard_in;
+
+static bool code_with_e0, lshift, rshift, lalt, ralt, lctrl, rctrl;
+// static bool capslock, numlock, scrolllock;
+static int column;
 
 u32 keymap[KEYBOARD_NUM_SCAN_CODES * KEYBOARD_MAP_COLS] = {
 
@@ -144,6 +149,8 @@ void init_keyboard()
     put_irq_handler(KEYBOARD_IRQ, keyboard_handler);
     enable_irq(KEYBOARD_IRQ);
 
+    lshift = rshift = lalt = ralt = lctrl = rctrl = false;
+
     keyboard_in.count = 0;
     keyboard_in.head = keyboard_in.tail = keyboard_in.buffer;
 }
@@ -161,38 +168,131 @@ void keyboard_handler(int irq)
     }
 }
 
+static u8 keyboard_readfrombuffer()
+{
+    while (keyboard_in.count <= 0)
+        ;
+
+    disable_int();
+    u8 scan_code = *keyboard_in.tail++;
+    if (keyboard_in.tail == keyboard_in.buffer + KEYBOARD_IN_BUFFERSIZE)
+        keyboard_in.tail = keyboard_in.buffer;
+    --keyboard_in.count;
+    enable_int();
+
+    return scan_code;
+}
+
 void keyboard_read()
 {
-    if (keyboard_in.count > 0)
-    {
-        disable_int();
-        u8 scan_code = *keyboard_in.tail++;
-        if (keyboard_in.tail == keyboard_in.buffer + KEYBOARD_IN_BUFFERSIZE)
-            keyboard_in.tail = keyboard_in.buffer;
-        --keyboard_in.count;
-        enable_int();
+	bool is_make;
+	u32 key = 0;
+	u32* keyrow;
 
-        if (scan_code == 0xE1)
+	if (keyboard_in.count > 0)
+    {
+		code_with_e0 = 0;
+		u8 scan_code = keyboard_readfrombuffer();
+
+        // Parse scan code
+		if (scan_code == 0xE1)
         {
-            // Do nothing
-        }
-        else if (scan_code == 0xE0)
-        {
-            // Do nothing
-        }
-        else
-        {
-            if (scan_code & KEYBOARD_FLAG_BREAK)
+			const u8 pausebrk_scode[] = {0xE1, 0x1D, 0x45, 0xE1, 0x9D, 0xC5};
+			bool is_pausebreak = 1;
+			for (int i = 1; i < 6; ++i)
             {
-                // Break code
-            }
-            else
+				if (keyboard_readfrombuffer() != pausebrk_scode[i])
+                {
+					is_pausebreak = 0;
+					break;
+				}
+			}
+			if (is_pausebreak)
+				key = KEYBOARD_CODE_PAUSEBREAK;
+		}
+		else if (scan_code == 0xE0)
+        {
+			scan_code = keyboard_readfrombuffer();
+
+            // PrintScreen pressed
+			if (scan_code == 0x2A)
             {
-                // Make code
-                char output[2] = { 0 };
-                output[0] = keymap[(scan_code & 0x7F) * KEYBOARD_MAP_COLS];
-                disp_str(output);
-            }
-        }
-    }
+				if (keyboard_readfrombuffer() == 0xE0)
+                {
+					if (keyboard_readfrombuffer() == 0x37)
+                    {
+						key = KEYBOARD_CODE_PRINTSCREEN;
+						is_make = true;
+					}
+				}
+			}
+			// PrintScreen released
+			if (scan_code == 0xB7)
+            {
+				if (keyboard_readfrombuffer() == 0xE0)
+                {
+					if (keyboard_readfrombuffer() == 0xAA) {
+						key = KEYBOARD_CODE_PRINTSCREEN;
+						is_make = false;
+					}
+				}
+			}
+
+			// not PrintScreen
+			if (key == 0) 
+				code_with_e0 = true;
+		}
+		if ((key != KEYBOARD_CODE_PAUSEBREAK) && (key != KEYBOARD_CODE_PRINTSCREEN))
+        {
+			is_make = !(scan_code & KEYBOARD_FLAG_BREAK);
+
+			keyrow = &keymap[(scan_code & 0x7F) * KEYBOARD_MAP_COLS];
+			
+			column = 0;
+			if (lshift || rshift)
+				column = 1;
+			if (code_with_e0)
+            {
+				column = 2; 
+				code_with_e0 = 0;
+			}
+			
+			key = keyrow[column];
+			
+			switch(key)
+            {
+			case KEYBOARD_CODE_LSHIFT:
+				lshift = is_make;
+				break;
+			case KEYBOARD_CODE_RSHIFT:
+				rshift = is_make;
+				break;
+			case KEYBOARD_CODE_LCTRL:
+				lctrl = is_make;
+				break;
+			case KEYBOARD_CODE_RCTRL:
+				rctrl = is_make;
+				break;
+			case KEYBOARD_CODE_LALT:
+				lalt = is_make;
+				break;
+			case KEYBOARD_CODE_RALT:
+				ralt = is_make;
+				break;
+			default:
+				break;
+			}
+
+			if (is_make)
+            {
+				key |= lshift ? KEYBOARD_FLAG_LSHIFT : 0;
+				key |= rshift ? KEYBOARD_FLAG_RSHIFT : 0;
+				key |= lctrl ? KEYBOARD_FLAG_LCTRL : 0;
+				key |= rctrl ? KEYBOARD_FLAG_RCTRL : 0;
+				key |= lalt ? KEYBOARD_FLAG_LALT : 0;
+				key |= ralt ? KEYBOARD_FLAG_RALT : 0;
+				in_process(key);
+			}
+		}
+	}
 }
