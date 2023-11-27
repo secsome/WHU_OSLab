@@ -6,7 +6,13 @@ typedef	unsigned char   u8;
 
 typedef void (*farproc_t)();
 
+#ifndef TYPE_SIZE_T_DEFINED
+#define TYPE_SIZE_T_DEFINED
 typedef u32 size_t;
+#endif // TYPE_SIZE_T_DEFINED
+
+#ifndef TYPE_BOOL_DEFINED
+#define TYPE_BOOL_DEFINED
 typedef u8  bool;
 
 #ifndef false
@@ -15,3 +21,4 @@ typedef u8  bool;
 #ifndef true
     #define true ((bool)1)
 #endif
+#endif // TYPE_BOOL_DEFINED

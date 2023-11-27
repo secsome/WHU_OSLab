@@ -2,7 +2,9 @@
 
 #define FORCEINLINE __attribute__((always_inline))
 
+#ifndef NULL
 #define NULL (0)
+#endif // NULL
 
 #define NAKED __attribute__((naked))
 
