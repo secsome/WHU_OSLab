@@ -1,6 +1,7 @@
 #include <kernel/proc.h>
 #include <kernel/global.h>
 #include <kernel/clock.h>
+#include <kernel/keyboard.h>
 #include <kernel/syscall.h>
 
 #include <lib/asm.h>
@@ -108,6 +109,7 @@ int kernel_main()
 	p_proc_ready = proc_table;
 
 	init_clock();
+	init_keyboard();
 
 	disp_clear();
 	disp_reset();

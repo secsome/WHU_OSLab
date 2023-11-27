@@ -67,7 +67,8 @@ enum
 {
 	NUM_IRQ = 16,
 	CLOCK_IRQ = 0,
-	KEYBOARD_IRQ = 2,	// cascade enable for 2nd AT controller
+	KEYBOARD_IRQ = 1,
+	CASCADE_IRQ = 2,	// cascade enable for 2nd AT controller
 	ETHER_IRQ = 3,		// default ethernet interrupt vector
 	SECONDARY_IRQ = 3,	// RS232 interrupt vector for port 2
 	RS232_IRQ = 4,		// RS232 interrupt vector for port 1
