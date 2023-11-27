@@ -40,16 +40,17 @@ typedef struct process_t
 extern process_t* p_proc_ready;
 enum
 {
-    NUM_TASKS = 3
+    NUM_TASKS = 4
 };
 extern process_t proc_table[NUM_TASKS];
 
 enum
 {
+    STACK_SIZE_TTY = 0x8000,
     STACK_SIZE_TESTA = 0x8000,
     STACK_SIZE_TESTB = 0x8000,
     STACK_SIZE_TESTC = 0x8000,
-    STACK_SIZE_TOTAL = STACK_SIZE_TESTA + STACK_SIZE_TESTB + STACK_SIZE_TESTC
+    STACK_SIZE_TOTAL = STACK_SIZE_TTY + STACK_SIZE_TESTA + STACK_SIZE_TESTB + STACK_SIZE_TESTC
 };
 extern char task_stack[STACK_SIZE_TOTAL];
 

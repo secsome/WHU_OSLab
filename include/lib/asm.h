@@ -12,3 +12,5 @@ void load_gdt(u32 address);
 void save_gdt(u32 address);
 void load_idt(u32 address);
 void save_idt(u32 address);
+void disable_int();
+void enable_int();

@@ -81,3 +81,21 @@ void save_idt(u32 address)
 		"sidt [%0]" : "=r"(address)
 	);
 }
+
+NAKED void disable_int()
+{
+	asm volatile
+	(
+		"cli\n"
+		"ret"
+	);
+}
+
+NAKED void enable_int()
+{
+	asm volatile
+	(
+		"sti\n"
+		"ret"
+	);
+}

@@ -20,7 +20,7 @@ DASMFLAGS	= -u -o $(ENTRYPOINT) -e $(ENTRYOFFSET)
 BINBOOT	= boot/boot.bin boot/loader.bin
 BINKERNEL	= kernel.bin
 OBJS		= 	kernel/kernel.o kernel/start.o kernel/i8259.o kernel/global.o kernel/protect.o kernel/proc.o kernel/clock.o \
-				kernel/syscall.o kernel/keyboard.o \
+				kernel/syscall.o kernel/keyboard.o kernel/tty.o \
 				lib/asm.o lib/string.o lib/strings.o lib/display.o lib/syscall.o lib/clock.o lib/crc.o lib/ctype.o \
 				lib/printf.o lib/stdlib.o lib/errno.o
 DASMOUTPUT	= kernel.bin.asm

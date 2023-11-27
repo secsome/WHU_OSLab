@@ -2,6 +2,7 @@
 #include <kernel/global.h>
 #include <kernel/clock.h>
 #include <kernel/keyboard.h>
+#include <kernel/tty.h>
 #include <kernel/syscall.h>
 
 #include <lib/asm.h>
@@ -20,6 +21,11 @@ char task_stack[STACK_SIZE_TOTAL];
 int k_reenter;
 task_t task_table[NUM_TASKS] = 
 {
+	{
+		task_tty,
+		STACK_SIZE_TTY,
+		"Teleprinter"
+	},
 	{
 		TestA,
 		STACK_SIZE_TESTA,
@@ -102,6 +108,7 @@ int kernel_main()
 	proc_table[0].ticks = proc_table[0].priority = 15;
 	proc_table[1].ticks = proc_table[1].priority = 5;
 	proc_table[2].ticks = proc_table[2].priority = 3;
+	proc_table[3].ticks = proc_table[3].priority = 1;
 	
 	k_reenter = 0;
 	sys_tick_count = 0;
