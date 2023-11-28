@@ -7,8 +7,12 @@
 static keyboard_t keyboard_in;
 
 static bool code_with_e0, lshift, rshift, lalt, ralt, lctrl, rctrl;
-// static bool capslock, numlock, scrolllock;
-static int column;
+static bool scroll_lock, num_lock, caps_lock;
+
+static u8 keyboard_read_from_buffer();
+static void keyboard_wait();
+static void keyboard_ack();
+static void keyboard_set_leds();
 
 u32 keymap[KEYBOARD_NUM_SCAN_CODES * KEYBOARD_MAP_COLS] = {
 
@@ -150,6 +154,10 @@ void init_keyboard()
     enable_irq(KEYBOARD_IRQ);
 
     lshift = rshift = lalt = ralt = lctrl = rctrl = false;
+	
+	caps_lock = false;
+	num_lock = true;
+	scroll_lock = false;
 
     keyboard_in.count = 0;
     keyboard_in.head = keyboard_in.tail = keyboard_in.buffer;
@@ -157,7 +165,7 @@ void init_keyboard()
 
 void keyboard_handler(int irq)
 {
-    u8 scan_code = in_byte(KEYBOARD_IN_PORT);
+    u8 scan_code = in_byte(KEYBOARD_PORT_DATA);
     
     if (keyboard_in.count < KEYBOARD_IN_BUFFERSIZE)
     {
@@ -166,21 +174,6 @@ void keyboard_handler(int irq)
             keyboard_in.head = keyboard_in.buffer;
         ++keyboard_in.count;
     }
-}
-
-static u8 keyboard_readfrombuffer()
-{
-    while (keyboard_in.count <= 0)
-        ;
-
-    disable_int();
-    u8 scan_code = *keyboard_in.tail++;
-    if (keyboard_in.tail == keyboard_in.buffer + KEYBOARD_IN_BUFFERSIZE)
-        keyboard_in.tail = keyboard_in.buffer;
-    --keyboard_in.count;
-    enable_int();
-
-    return scan_code;
 }
 
 void keyboard_read(tty_t* tty)
@@ -192,7 +185,7 @@ void keyboard_read(tty_t* tty)
 	if (keyboard_in.count > 0)
     {
 		code_with_e0 = 0;
-		u8 scan_code = keyboard_readfrombuffer();
+		u8 scan_code = keyboard_read_from_buffer();
 
         // Parse scan code
 		if (scan_code == 0xE1)
@@ -201,7 +194,7 @@ void keyboard_read(tty_t* tty)
 			bool is_pausebreak = 1;
 			for (int i = 1; i < 6; ++i)
             {
-				if (keyboard_readfrombuffer() != pausebrk_scode[i])
+				if (keyboard_read_from_buffer() != pausebrk_scode[i])
                 {
 					is_pausebreak = 0;
 					break;
@@ -212,14 +205,14 @@ void keyboard_read(tty_t* tty)
 		}
 		else if (scan_code == 0xE0)
         {
-			scan_code = keyboard_readfrombuffer();
+			scan_code = keyboard_read_from_buffer();
 
             // PrintScreen pressed
 			if (scan_code == 0x2A)
             {
-				if (keyboard_readfrombuffer() == 0xE0)
+				if (keyboard_read_from_buffer() == 0xE0)
                 {
-					if (keyboard_readfrombuffer() == 0x37)
+					if (keyboard_read_from_buffer() == 0x37)
                     {
 						key = KEYBOARD_CODE_PRINTSCREEN;
 						is_make = true;
@@ -229,9 +222,9 @@ void keyboard_read(tty_t* tty)
 			// PrintScreen released
 			if (scan_code == 0xB7)
             {
-				if (keyboard_readfrombuffer() == 0xE0)
+				if (keyboard_read_from_buffer() == 0xE0)
                 {
-					if (keyboard_readfrombuffer() == 0xAA) {
+					if (keyboard_read_from_buffer() == 0xAA) {
 						key = KEYBOARD_CODE_PRINTSCREEN;
 						is_make = false;
 					}
@@ -248,14 +241,20 @@ void keyboard_read(tty_t* tty)
 
 			keyrow = &keymap[(scan_code & 0x7F) * KEYBOARD_MAP_COLS];
 			
-			column = 0;
-			if (lshift || rshift)
-				column = 1;
-			if (code_with_e0)
-            {
-				column = 2; 
-				code_with_e0 = 0;
+			bool caps = lshift || rshift;
+			if (caps_lock)
+			{
+				if ((keyrow[0] >= 'a') && (keyrow[0] <= 'z'))
+					caps = !caps;
 			}
+
+			int column = 0;
+
+			if (caps)
+				column = 1;
+
+			if (code_with_e0)
+				column = 2;
 			
 			key = keyrow[column];
 			
@@ -279,20 +278,152 @@ void keyboard_read(tty_t* tty)
 			case KEYBOARD_CODE_RALT:
 				ralt = is_make;
 				break;
+			case KEYBOARD_CODE_CAPSLOCK:
+				if (is_make) 
+				{
+					caps_lock = !caps_lock;
+					keyboard_set_leds();
+				}
+				break;
+			case KEYBOARD_CODE_NUMLOCK:
+				if (is_make) 
+				{
+					num_lock = !num_lock;
+					keyboard_set_leds();
+				}
+				break;
+			case KEYBOARD_CODE_SCROLLLOCK:
+				if (is_make) 
+				{
+					scroll_lock = !scroll_lock;
+					keyboard_set_leds();
+				}
+				break;
 			default:
 				break;
 			}
 
 			if (is_make)
             {
+				bool pad = false;
+
+				if ((key >= KEYBOARD_CODE_NUMPAD_SLASH) && (key <= KEYBOARD_CODE_NUMPAD_9))
+				{
+					pad = true;
+					switch (key)
+					{
+					case KEYBOARD_CODE_NUMPAD_SLASH:
+						key = '/';
+						break;
+					case KEYBOARD_CODE_NUMPAD_STAR:
+						key = '*';
+						break;
+					case KEYBOARD_CODE_NUMPAD_MINUS:
+						key = '-';
+						break;
+					case KEYBOARD_CODE_NUMPAD_PLUS:
+						key = '+';
+						break;
+					case KEYBOARD_CODE_NUMPAD_ENTER:
+						key = KEYBOARD_CODE_ENTER;
+						break;
+					default:
+						if (num_lock &&
+							key >= KEYBOARD_CODE_NUMPAD_0 &&
+							key <= KEYBOARD_CODE_NUMPAD_9
+						)
+							key = key - KEYBOARD_CODE_NUMPAD_0 + '0';
+						else if (num_lock && key == KEYBOARD_CODE_NUMPAD_DOT)
+							key = '.';
+						else switch(key)
+						{
+						case KEYBOARD_CODE_NUMPAD_HOME:
+							key = KEYBOARD_CODE_HOME;
+							break;
+						case KEYBOARD_CODE_NUMPAD_END:
+							key = KEYBOARD_CODE_END;
+							break;
+						case KEYBOARD_CODE_NUMPAD_PAGEUP:
+							key = KEYBOARD_CODE_PAGEUP;
+							break;
+						case KEYBOARD_CODE_NUMPAD_PAGEDOWN:
+							key = KEYBOARD_CODE_PAGEDOWN;
+							break;
+						case KEYBOARD_CODE_NUMPAD_INSERT:
+							key = KEYBOARD_CODE_INSERT;
+							break;
+						case KEYBOARD_CODE_NUMPAD_UP:
+							key = KEYBOARD_CODE_UP;
+							break;
+						case KEYBOARD_CODE_NUMPAD_DOWN:
+							key = KEYBOARD_CODE_DOWN;
+							break;
+						case KEYBOARD_CODE_NUMPAD_LEFT:
+							key = KEYBOARD_CODE_LEFT;
+							break;
+						case KEYBOARD_CODE_NUMPAD_RIGHT:
+							key = KEYBOARD_CODE_RIGHT;
+							break;
+						case KEYBOARD_CODE_NUMPAD_DOT:
+							key = KEYBOARD_CODE_DELETE;
+							break;
+						default:
+							break;
+						}
+						break;
+					}
+				}
+
 				key |= lshift ? KEYBOARD_FLAG_LSHIFT : 0;
 				key |= rshift ? KEYBOARD_FLAG_RSHIFT : 0;
 				key |= lctrl ? KEYBOARD_FLAG_LCTRL : 0;
 				key |= rctrl ? KEYBOARD_FLAG_RCTRL : 0;
 				key |= lalt ? KEYBOARD_FLAG_LALT : 0;
 				key |= ralt ? KEYBOARD_FLAG_RALT : 0;
+				key |= pad ? KEYBOARD_FLAG_NUMPAD : 0;
+
 				tty_process_input(tty, key);
 			}
 		}
 	}
+}
+
+static u8 keyboard_read_from_buffer()
+{
+    while (keyboard_in.count <= 0)
+        ;
+
+    disable_int();
+    u8 scan_code = *keyboard_in.tail++;
+    if (keyboard_in.tail == keyboard_in.buffer + KEYBOARD_IN_BUFFERSIZE)
+        keyboard_in.tail = keyboard_in.buffer;
+    --keyboard_in.count;
+    enable_int();
+
+    return scan_code;
+}
+
+static void keyboard_wait()
+{
+	for (u8 status = in_byte(KEYBOARD_PORT_CMD); status & 0x02; status = in_byte(KEYBOARD_PORT_CMD))
+		;
+}
+
+static void keyboard_ack()
+{
+	for (u8 data = in_byte(KEYBOARD_PORT_DATA); data != KEYBOARD_CODE_ACK; data = in_byte(KEYBOARD_PORT_DATA))
+		;
+}
+
+static void keyboard_set_leds()
+{
+	u8 leds = (caps_lock << 2) | (num_lock << 1) | scroll_lock;
+
+	keyboard_wait();
+	out_byte(KEYBOARD_PORT_DATA, KEYBOARD_LED);
+	keyboard_ack();
+
+	keyboard_wait();
+	out_byte(KEYBOARD_PORT_DATA, leds);
+	keyboard_ack();
 }

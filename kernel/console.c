@@ -17,7 +17,7 @@ void console_put_char(console_t* console, char ch)
 {
     u8* vmem = (u8*)(V_MEM_BASE + console->cursor * 2);
 
-	switch(ch) 
+	switch (ch) 
     {
 	case '\n':
 		if (console->cursor < console->original_address + console->memory_limit - CONSOLE_SCREEN_WIDTH) 
