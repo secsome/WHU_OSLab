@@ -3,7 +3,7 @@
     "configurations": [
         {
             "request": "launch",
-            "name": "(gdb) Attach to kernel",
+            "name": "(gdb) Debug the kernel",
             "type": "cppdbg",
             "program": "${workspaceFolder}/kernel.bin",
             "MIMode": "gdb",
@@ -21,7 +21,14 @@
                     "text": "-gdb-set disassembly-flavor intel",
                     "ignoreFailures": true
                 }
+            ],
+            "postRemoteConnectCommands": [
+                {
+                    "description": "加载符号文件",
+                    "text": "symbol ${workspaceFolder}/kernel.dbg"
+                }
             ]
+
         }
     ]
 }

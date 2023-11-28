@@ -23,4 +23,5 @@ extern tty_t ttys_table[];
 
 void task_tty();
 
-void in_process(tty_t* tty, u32 key);
+void tty_process_input(tty_t* tty, u32 key);
+void tty_init_screen(tty_t* tty);

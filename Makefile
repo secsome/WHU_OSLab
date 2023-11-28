@@ -21,6 +21,7 @@ DASMFLAGS	= -u -o $(ENTRYPOINT) -e $(ENTRYOFFSET)
 # This Program
 BINBOOT	= boot/boot.bin boot/loader.bin
 BINKERNEL	= kernel.bin
+SYMKERNEL = kernel.dbg
 OBJS		= 	kernel/kernel.o kernel/start.o kernel/i8259.o kernel/global.o kernel/protect.o kernel/proc.o kernel/clock.o \
 				kernel/syscall.o kernel/keyboard.o kernel/tty.o kernel/console.o \
 				lib/asm.o lib/string.o lib/strings.o lib/display.o lib/syscall.o lib/clock.o lib/crc.o lib/ctype.o \
@@ -32,6 +33,8 @@ DASMOUTPUT	= kernel.bin.asm
 
 # Default starting position
 everything : $(BINBOOT) $(BINKERNEL)
+	objcopy --only-keep-debug $(BINKERNEL) $(SYMKERNEL)
+	strip --strip-debug $(BINKERNEL)
 
 all : realclean everything
 
@@ -43,7 +46,7 @@ clean :
 	rm -f $(OBJS)
 
 realclean :
-	rm -f $(OBJS) $(BINBOOT) $(BINKERNEL)
+	rm -f $(OBJS) $(BINBOOT) $(BINKERNEL) $(SYMKERNEL)
 	rm -rf ./floppy
 
 disasm :

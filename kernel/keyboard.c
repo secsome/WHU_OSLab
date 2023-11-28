@@ -291,7 +291,7 @@ void keyboard_read(tty_t* tty)
 				key |= rctrl ? KEYBOARD_FLAG_RCTRL : 0;
 				key |= lalt ? KEYBOARD_FLAG_LALT : 0;
 				key |= ralt ? KEYBOARD_FLAG_RALT : 0;
-				in_process(tty, key);
+				tty_process_input(tty, key);
 			}
 		}
 	}
