@@ -43,6 +43,7 @@ void console_put_char(console_t* console, char ch)
 		break;
 	}
 
+
 	while (console->cursor >= console->current_start_address + CONSOLE_SCREEN_SIZE)
 		console_scroll(console, false);
 
@@ -51,8 +52,11 @@ void console_put_char(console_t* console, char ch)
 
 void console_flush(console_t* console)
 {
-    console_set_cursor(console->cursor);
-    console_set_video_start_address(console->current_start_address);
+    if (console_is_current(console))
+    {
+        console_set_cursor(console->cursor);
+        console_set_video_start_address(console->current_start_address);
+    }
 }
 
 void console_select(u32 console_id)

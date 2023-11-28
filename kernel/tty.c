@@ -29,6 +29,13 @@ void task_tty()
     }
 }
 
+u32 tty_write(tty_t* tty, const char* buffer, u32 length)
+{
+    while (length--)
+        console_put_char(tty->console, *buffer++);
+    return 0;
+}
+
 void tty_process_input(tty_t* tty, u32 key)
 {
     if (!(key & KEYBOARD_FLAG_EXT))

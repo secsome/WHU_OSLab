@@ -35,6 +35,7 @@ typedef struct process_t
     u32 priority;
     u32 pid;
     char process_name[16];
+    int tty_index;
 } process_t;
 
 extern process_t* p_proc_ready;
