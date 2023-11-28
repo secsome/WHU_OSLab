@@ -40,9 +40,10 @@ typedef struct process_t
 extern process_t* p_proc_ready;
 enum
 {
-    NUM_TASKS = 4
+    NUM_TASKS = 1,
+    NUM_PROCS = 3
 };
-extern process_t proc_table[NUM_TASKS];
+extern process_t proc_table[NUM_TASKS + NUM_PROCS];
 
 enum
 {
@@ -63,6 +64,7 @@ typedef struct task_t
     char name[32];
 } task_t;
 
-extern task_t task_table[NUM_TASKS];
+extern task_t system_task_table[NUM_TASKS];
+extern task_t user_proc_table[NUM_PROCS];
 
 void schedual();

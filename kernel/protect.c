@@ -97,7 +97,7 @@ void init_prot()
 	// 填充 GDT 中进程的 LDT 的描述符
 	process_t* p_proc = proc_table;
 	u16 selector_ldt = INDEX_LDT_FIRST << 3;
-	for (int i = 0; i < NUM_TASKS; ++i)
+	for (int i = 0; i < NUM_TASKS + NUM_PROCS; ++i)
 	{
 		init_descriptor(&gdt[selector_ldt>>3], 
 				vir2phys(seg2phys(SELECTOR_KERNEL_DS), proc_table[i].ldts),
