@@ -9,10 +9,12 @@ ENTRYOFFSET	=   0x400
 ASM		= nasm
 DASM	= ndisasm
 CC		= gcc
+CPP		= g++
 LD		= ld
 ASMBFLAGS	= -g -I boot/include/
 ASMKFLAGS	= -g -I include/kernel/ -f elf
-CFLAGS		= -g -Wall -fno-pie -masm=intel -m32 -fno-stack-protector -I include/ -c -fno-builtin
+CFLAGS		= -g -Wall -fno-pie -masm=intel -std=c17 -m32 -fno-stack-protector -I include/ -c -fno-builtin
+CPPFLAGS	= -g -Wall -fno-pie -masm=intel -std=c++20 -m32 -fno-stack-protector -I include/ -c -fno-builtin
 LDFLAGS		= -melf_i386 -flto=thin -Ttext $(ENTRYPOINT)
 DASMFLAGS	= -u -o $(ENTRYPOINT) -e $(ENTRYOFFSET)
 
@@ -20,7 +22,7 @@ DASMFLAGS	= -u -o $(ENTRYPOINT) -e $(ENTRYOFFSET)
 BINBOOT	= boot/boot.bin boot/loader.bin
 BINKERNEL	= kernel.bin
 OBJS		= 	kernel/kernel.o kernel/start.o kernel/i8259.o kernel/global.o kernel/protect.o kernel/proc.o kernel/clock.o \
-				kernel/syscall.o kernel/keyboard.o kernel/tty.o \
+				kernel/syscall.o kernel/keyboard.o kernel/tty.o kernel/console.o \
 				lib/asm.o lib/string.o lib/strings.o lib/display.o lib/syscall.o lib/clock.o lib/crc.o lib/ctype.o \
 				lib/printf.o lib/stdlib.o lib/errno.o
 DASMOUTPUT	= kernel.bin.asm
@@ -72,8 +74,14 @@ kernel/%.o : kernel/%.asm*
 kernel/%.o: kernel/%.c*
 	$(CC) $(CFLAGS) -o $@ $<
 
+kernel/%.o: kernel/%.cpp*
+	$(CPP) $(CPPFLAGS) -o $@ $<
+
 lib/%.o : lib/%.asm*
 	$(ASM) $(ASMKFLAGS) -o $@ $<
 
 lib/%.o: lib/%.c*
 	$(CC) $(CFLAGS) -o $@ $<
+
+lib/%.o: lib/%.cpp*
+	$(CPP) $(CPPFLAGS) -o $@ $<

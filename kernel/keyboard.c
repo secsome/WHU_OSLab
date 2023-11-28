@@ -183,7 +183,7 @@ static u8 keyboard_readfrombuffer()
     return scan_code;
 }
 
-void keyboard_read()
+void keyboard_read(tty_t* tty)
 {
 	bool is_make;
 	u32 key = 0;
@@ -291,7 +291,7 @@ void keyboard_read()
 				key |= rctrl ? KEYBOARD_FLAG_RCTRL : 0;
 				key |= lalt ? KEYBOARD_FLAG_LALT : 0;
 				key |= ralt ? KEYBOARD_FLAG_RALT : 0;
-				in_process(key);
+				in_process(tty, key);
 			}
 		}
 	}

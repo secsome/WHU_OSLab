@@ -102,6 +102,8 @@ typedef struct keyboard_t
 
 extern u32 keymap[KEYBOARD_NUM_SCAN_CODES * KEYBOARD_MAP_COLS];
 
+struct tty_t;
+
 void init_keyboard();
 void keyboard_handler(int irq);
-void keyboard_read();
+void keyboard_read(struct tty_t* tty);
