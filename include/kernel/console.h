@@ -50,7 +50,6 @@ enum
 
 bool console_is_current(console_t* console);
 void console_put_char(console_t* console, char ch);
-void console_set_cursor(u32 position);
-void console_set_video_start_address(u32 address);
+void console_flush(console_t* console);
 void console_select(u32 console_id);
 void console_scroll(console_t* console, bool up);

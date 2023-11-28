@@ -9,6 +9,7 @@ tty_t ttys_table[NUM_CONSOLES];
 static void tty_init(tty_t* tty);
 static void tty_do_read(tty_t* tty);
 static void tty_do_write(tty_t* tty);
+static void tty_put_key(tty_t* tty, u32 key);
 
 void task_tty()
 {
@@ -31,20 +32,18 @@ void task_tty()
 void tty_process_input(tty_t* tty, u32 key)
 {
     if (!(key & KEYBOARD_FLAG_EXT))
-    {
-        if (tty->input_buffer_count < TTY_INPUT_SIZE)
-        {
-            *tty->input_buffer_head++ = key;
-            if (tty->input_buffer_head == tty->input_buffer + TTY_INPUT_SIZE)
-                tty->input_buffer_head = tty->input_buffer;
-            ++tty->input_buffer_count;
-        }
-    }
+        tty_put_key(tty, key);
     else
     {
         const u32 raw_code = key & KEYBOARD_MASK_RAW;
         switch (raw_code)
         {
+            case KEYBOARD_CODE_ENTER:
+                tty_put_key(tty, '\n');
+                break;
+            case KEYBOARD_CODE_BACKSPACE:
+                tty_put_key(tty, '\b');
+                break;
             case KEYBOARD_CODE_UP:
                 if ((key & KEYBOARD_FLAG_LSHIFT) || (key & KEYBOARD_FLAG_RSHIFT))
                     console_scroll(tty->console, false);
@@ -98,7 +97,7 @@ void tty_init_screen(tty_t* tty)
 		console_put_char(tty->console, '#');
 	}
 
-	console_set_cursor(tty->console->cursor);
+    console_flush(tty->console);
 }
 
 static void tty_init(tty_t* tty)
@@ -126,4 +125,15 @@ static void tty_do_write(tty_t* tty)
 		--tty->input_buffer_count;
 		console_put_char(tty->console, ch);
 	}
+}
+
+void tty_put_key(tty_t* tty, u32 key)
+{
+    if (tty->input_buffer_count < TTY_INPUT_SIZE)
+    {
+        *tty->input_buffer_head++ = key;
+        if (tty->input_buffer_head == tty->input_buffer + TTY_INPUT_SIZE)
+            tty->input_buffer_head = tty->input_buffer;
+        ++tty->input_buffer_count;
+    }
 }
