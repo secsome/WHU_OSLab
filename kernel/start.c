@@ -1,5 +1,6 @@
 #include <kernel/protect.h>
 #include <kernel/global.h>
+#include <lib/asm.h>
 #include <lib/display.h>
 #include <lib/string.h>
 
@@ -15,6 +16,10 @@ void cstart()
 	disp_reset();
 	disp_str("\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n"
                  "-----\"cstart\" begins-----\n");
+
+	bool has_fpu = init_fpu();
+	if (!has_fpu)
+		disp_str("FAILED TO INITIALIZE FPU!\n");
 
 	/* 将 LOADER 中的 GDT 复制到新的 GDT 中 */
 	memcpy(&gdt, (void*)(*((u32*)(&gdt_ptr[2]))), *((u16*)(&gdt_ptr[0])) + 1);

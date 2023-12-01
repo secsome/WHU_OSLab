@@ -70,3 +70,19 @@ global enable_int
 enable_int:
     sti
     ret
+
+; bool init_fpu()
+fpu_test_word dw 0x55AA
+global init_fpu
+init_fpu:
+    mov eax, cr0
+    or eax, 00000000000000000000000000100010b
+    mov cr0, eax
+    fninit
+    fnstsw [fpu_test_word]
+    cmp word [fpu_test_word], 0
+    xor eax, eax
+    jne .no_fpu
+    mov al, 1
+.no_fpu:
+    ret

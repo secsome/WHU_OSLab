@@ -23,7 +23,8 @@ extern	k_reenter
 bits 32
 
 [SECTION .data]
-clock_int_msg		db	"^", 0
+fastcall_edx dd	0
+fastcall_ecx dd 0
 
 [SECTION .bss]
 StackSpace		resb	2 * 1024
@@ -270,9 +271,13 @@ save:
                                         ; }
 
 sys_call:
+	mov [fastcall_edx], edx
+	mov [fastcall_ecx], ecx
 	call save
 	push dword [p_proc_ready]
 	sti
+	mov edx, [fastcall_edx]
+	mov ecx, [fastcall_ecx]
 	push edx
 	push ecx
 	call [sys_call_table + eax * 4]

@@ -23,9 +23,9 @@ BINBOOT	= boot/boot.bin boot/loader.bin
 BINKERNEL	= kernel.bin
 SYMKERNEL = kernel.dbg
 OBJS		= 	kernel/kernel.o kernel/start.o kernel/i8259.o kernel/global.o kernel/protect.o kernel/proc.o kernel/clock.o \
-				kernel/syscall.o kernel/keyboard.o kernel/tty.o kernel/console.o \
+				kernel/syscall.o kernel/keyboard.o kernel/tty.o kernel/console.o kernel/arith64.o \
 				lib/asm.o lib/string.o lib/strings.o lib/display.o lib/syscall.o lib/clock.o lib/crc.o lib/ctype.o \
-				lib/printf.o lib/stdlib.o lib/errno.o
+				lib/printf.o lib/stdlib.o lib/errno.o lib/puts.o
 DASMOUTPUT	= kernel.bin.asm
 
 # All Phony Targets
@@ -71,20 +71,20 @@ boot/loader.bin : boot/loader.asm boot/include/load.inc \
 $(BINKERNEL) : $(OBJS)
 	$(LD) $(LDFLAGS) -o $(BINKERNEL) $(OBJS)
 
-kernel/%.o : kernel/%.asm*
+kernel/%.o : kernel/%.asm
 	$(ASM) $(ASMKFLAGS) -o $@ $<
 
-kernel/%.o: kernel/%.c*
+kernel/%.o: kernel/%.c
 	$(CC) $(CFLAGS) -o $@ $<
 
-kernel/%.o: kernel/%.cpp*
+kernel/%.o: kernel/%.cpp
 	$(CPP) $(CPPFLAGS) -o $@ $<
 
-lib/%.o : lib/%.asm*
+lib/%.o : lib/%.asm
 	$(ASM) $(ASMKFLAGS) -o $@ $<
 
-lib/%.o: lib/%.c*
+lib/%.o: lib/%.c
 	$(CC) $(CFLAGS) -o $@ $<
 
-lib/%.o: lib/%.cpp*
+lib/%.o: lib/%.cpp
 	$(CPP) $(CPPFLAGS) -o $@ $<

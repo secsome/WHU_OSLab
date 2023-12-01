@@ -15,6 +15,11 @@ typedef void (*farproc_t)();
     typedef u32 size_t;
 #endif // TYPE_SIZE_T_DEFINED
 
+#ifndef TYPE_PTRDIFF_DEFINED
+    #define TYPE_PTRDIFF_DEFINED
+    typedef u32 ptrdiff_t;
+#endif // TYPE_PTRDIFF_DEFINED
+
 #ifndef __cplusplus
     #ifndef TYPE_BOOL_DEFINED
         #define TYPE_BOOL_DEFINED
