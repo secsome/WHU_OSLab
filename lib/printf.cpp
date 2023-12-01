@@ -43,7 +43,7 @@ using out_fct_t = void(char character, void *buffer, size_t idx, size_t maxlen);
 static constexpr void out_buffer_internal(char character, void *buffer, size_t idx, size_t maxlen)
 {
     if (idx < maxlen)
-        *reinterpret_cast<char *>(buffer) = character;
+        reinterpret_cast<char *>(buffer)[idx] = character;
 }
 
 // internal null output

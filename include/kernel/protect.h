@@ -121,7 +121,9 @@ enum
 // 每个任务有一个单独的 LDT, 每个 LDT 中的描述符个数
 enum 
 {
-	LDT_SIZE = 2
+	LDT_FLATC = 0,
+	LDT_RW = 1,
+	LDT_COUNT = 2,
 };
 
 enum

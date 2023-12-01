@@ -1,8 +1,10 @@
 #include <kernel/tty.h>
 #include <kernel/keyboard.h>
 #include <kernel/console.h>
+#include <kernel/proc.h>
 #include <lib/display.h>
 #include <lib/asm.h>
+#include <lib/assert.h>
 
 tty_t ttys_table[NUM_CONSOLES];
 
@@ -143,4 +145,61 @@ void tty_put_key(tty_t* tty, u32 key)
             tty->input_buffer_head = tty->input_buffer;
         ++tty->input_buffer_count;
     }
+}
+
+u32 writex_impl(const char* s, const process_t* process)
+{
+    enum
+    {
+        MAG_CH_PANIC = '\002',
+        MAG_CH_ASSERT = '\003'
+    };
+
+    const char* p;
+	char ch;
+
+	char reenter_err[] = "? k_reenter is incorrect for unknown reason";
+	reenter_err[0] = MAG_CH_PANIC;
+
+	if (k_reenter == 0)  // writex() called in Ring<1~3>
+		p = va2la(proc2pid(process), s);
+	else if (k_reenter > 0) // writex() called in Ring<0>
+		p = s;
+	else // should never happen
+		p = reenter_err;
+	
+	// if assertion fails in any TASK, the system will be halted;
+	// if it fails in a USER PROC, it'll return like any normal syscall does.
+	if ((*p == MAG_CH_PANIC) || (*p == MAG_CH_ASSERT && p_proc_ready < &proc_table[NUM_TASKS]))
+    {
+		disable_int();
+		char* v = (char*)V_MEM_BASE;
+		const char* q = p + 1; // +1: skip the magic char
+
+		while (v < (char*)(V_MEM_BASE + V_MEM_SIZE))
+        {
+			*v++ = *q++;
+			*v++ = COLOR_RED;
+			if (!*q) {
+				while (((int)v - V_MEM_BASE) % (CONSOLE_SCREEN_WIDTH * 16)) {
+					/* *v++ = ' '; */
+					v++;
+					*v++ = COLOR_GRAY;
+				}
+				q = p + 1;
+			}
+		}
+
+		halt();
+	}
+
+	while ((ch = *p++) != 0)
+    {
+		if (ch == MAG_CH_PANIC || ch == MAG_CH_ASSERT)
+			continue; // skip the magic char
+
+		console_put_char(ttys_table[process->tty_index].console, ch);
+	}
+
+	return 0;
 }

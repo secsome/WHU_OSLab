@@ -4,6 +4,11 @@
         "*.h": "c",
         "*.c": "c",
         "*.cpp": "cpp",
-        "cstdint": "cpp"
+        "cstdint": "cpp",
+        "random": "c",
+        "atomic": "c",
+        "cmath": "c",
+        "functional": "c",
+        "__functional_03": "c"
     }
 }

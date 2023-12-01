@@ -86,3 +86,16 @@ init_fpu:
     mov al, 1
 .no_fpu:
     ret
+
+; void halt()
+global halt
+halt:
+    hlt
+    ret
+
+; void ud2()
+global ud2
+ud2:
+    ud2
+    ret
+    

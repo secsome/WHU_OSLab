@@ -23,9 +23,10 @@ BINBOOT	= boot/boot.bin boot/loader.bin
 BINKERNEL	= kernel.bin
 SYMKERNEL = kernel.dbg
 OBJS		= 	kernel/kernel.o kernel/start.o kernel/i8259.o kernel/global.o kernel/protect.o kernel/proc.o kernel/clock.o \
-				kernel/syscall.o kernel/keyboard.o kernel/tty.o kernel/console.o kernel/arith64.o \
+				kernel/syscall.o kernel/keyboard.o kernel/tty.o kernel/console.o kernel/arith64.o kernel/sendrecv.o \
+				kernel/systask.o \
 				lib/asm.o lib/string.o lib/strings.o lib/display.o lib/syscall.o lib/clock.o lib/crc.o lib/ctype.o \
-				lib/printf.o lib/stdlib.o lib/errno.o lib/puts.o
+				lib/printf.o lib/stdlib.o lib/errno.o lib/puts.o lib/assert.o
 DASMOUTPUT	= kernel.bin.asm
 
 # All Phony Targets

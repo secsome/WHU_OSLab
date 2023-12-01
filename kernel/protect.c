@@ -101,7 +101,7 @@ void init_prot()
 	{
 		init_descriptor(&gdt[selector_ldt>>3], 
 				vir2phys(seg2phys(SELECTOR_KERNEL_DS), proc_table[i].ldts),
-				LDT_SIZE * sizeof(descriptor_t) - 1,
+				LDT_COUNT * sizeof(descriptor_t) - 1,
 				DA_LDT);
 		++p_proc;
 		selector_ldt += 1 << 3;

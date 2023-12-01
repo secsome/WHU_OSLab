@@ -1,6 +1,5 @@
 #include <kernel/clock.h>
 #include <kernel/proc.h>
-#include <kernel/syscall.h>
 #include <lib/asm.h>
 #include <lib/display.h>
 
@@ -13,6 +12,7 @@ void init_clock()
 	enable_irq(CLOCK_IRQ);
 }
 
+u32 sys_tick_count = 0;
 void clock_handler(int irq)
 {
     ++sys_tick_count;

@@ -23,8 +23,12 @@ extern	k_reenter
 bits 32
 
 [SECTION .data]
-fastcall_edx dd	0
-fastcall_ecx dd 0
+syscall_param0 dd 0
+syscall_param1 dd 0
+syscall_param2 dd 0
+global syscall_param0
+global syscall_param1
+global syscall_param2
 
 [SECTION .bss]
 StackSpace		resb	2 * 1024
@@ -271,17 +275,17 @@ save:
                                         ; }
 
 sys_call:
-	mov [fastcall_edx], edx
-	mov [fastcall_ecx], ecx
 	call save
 	push dword [p_proc_ready]
 	sti
-	mov edx, [fastcall_edx]
-	mov ecx, [fastcall_ecx]
-	push edx
+	mov ecx, [syscall_param2]
+	push ecx
+	mov ecx, [syscall_param1]
+	push ecx
+	mov ecx, [syscall_param0]
 	push ecx
 	call [sys_call_table + eax * 4]
-	add esp, 4 * 3
+	add esp, 16
 	mov [esi + EAXREG - P_STACKBASE], eax
 	cli
 	ret

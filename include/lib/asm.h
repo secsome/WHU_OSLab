@@ -17,5 +17,7 @@ FASTCALL void save_idt(u32 address);
 FASTCALL void disable_int();
 FASTCALL void enable_int();
 FASTCALL bool init_fpu();
+FASTCALL void halt();
+FASTCALL void ud2();
 
 HEADER_CPP_END

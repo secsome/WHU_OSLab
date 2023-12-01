@@ -1,9 +1,11 @@
 #pragma once
 
 #include <kernel/const.h>
+#include <kernel/type.h>
 
 HEADER_CPP_BEGIN
 
+u32 get_ticks();
 void usleep(int millisecond);
 void sleep(int second);
 

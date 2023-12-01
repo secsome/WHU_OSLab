@@ -38,8 +38,9 @@ char* strcat(char* dest, const char* src)
     char* pdst = (char*)dest;
     char* psrc = (char*)src;
     
-    while (*pdst++);
-
+    while (*pdst++)
+		;
+	--pdst;
     while (*psrc)
         *(pdst++) = *(psrc++);
     *pdst = 0;
@@ -117,8 +118,9 @@ char* strncat(char* dest, const char* src, size_t n)
     char* pdst = (char*)dest;
     char* psrc = (char*)src;
     
-    while (*pdst++);
-
+    while (*pdst++)
+		;
+	--pdst;
     while (*psrc && --n)
         *(pdst++) = *(psrc++);
     *pdst = 0;

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <kernel/const.h>
+#include <kernel/type.h>
 
 HEADER_CPP_BEGIN
 
@@ -15,6 +16,8 @@ enum
 };
 
 void init_clock();
+
+extern u32 sys_tick_count;
 void clock_handler(int irq);
 
 HEADER_CPP_END

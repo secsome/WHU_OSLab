@@ -28,33 +28,48 @@ typedef struct stackframe_t
     u32 ss;
 } stackframe_t;
 
+struct message_t;
 typedef struct process_t
 {
     stackframe_t regs;
     u16 ldt_selector;
-    descriptor_t ldts[LDT_SIZE];
+    descriptor_t ldts[LDT_COUNT];
     u32 ticks; // remained ticks
     u32 priority;
     u32 pid;
     char process_name[16];
+    int process_flags;
+    struct message_t* msg;
+    int recvfrom;
+    int sendto;
+    bool has_int_msg;
+    struct process_t* sending;
+    struct process_t* next_sending;
     int tty_index;
 } process_t;
 
 extern process_t* p_proc_ready;
 enum
 {
-    NUM_TASKS = 1,
-    NUM_PROCS = 3
+    NUM_TASKS = 2,
+    NUM_PROCS = 3,   
 };
 extern process_t proc_table[NUM_TASKS + NUM_PROCS];
+#define proc2pid(x) ((int)(x - proc_table))
+int process_get_linear_address(const process_t* p, int idx);
+void* va2la(int pid, const void* virtual_address);
+void process_block(process_t* proc);
+void process_unblock(process_t* proc);
+bool process_check_deadlock(int src, int dst);
 
 enum
 {
     STACK_SIZE_TTY = 0x8000,
+    STACK_SIZE_SYS = 0x8000,
     STACK_SIZE_TESTA = 0x8000,
     STACK_SIZE_TESTB = 0x8000,
     STACK_SIZE_TESTC = 0x8000,
-    STACK_SIZE_TOTAL = STACK_SIZE_TTY + STACK_SIZE_TESTA + STACK_SIZE_TESTB + STACK_SIZE_TESTC
+    STACK_SIZE_TOTAL = STACK_SIZE_TTY + STACK_SIZE_SYS + STACK_SIZE_TESTA + STACK_SIZE_TESTB + STACK_SIZE_TESTC
 };
 extern char task_stack[STACK_SIZE_TOTAL];
 

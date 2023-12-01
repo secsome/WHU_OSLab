@@ -11,10 +11,13 @@
 #include <lib/printf.h>
 #include <lib/display.h>
 #include <lib/clock.h>
+#include <lib/assert.h>
 
 void TestA();
 void TestB();
 void TestC();
+
+void task_sys();
 
 process_t* p_proc_ready;
 process_t proc_table[NUM_TASKS + NUM_PROCS];
@@ -26,6 +29,11 @@ task_t system_task_table[NUM_TASKS] =
 		task_tty,
 		STACK_SIZE_TTY,
 		"Teleprinter"
+	},
+	{
+		task_sys,
+		STACK_SIZE_SYS,
+		"SysTask"
 	}
 };
 task_t user_proc_table[NUM_PROCS] = 
@@ -53,7 +61,7 @@ void TestA()
 {
     while (true)
     {
-		printf("<Ticks:%08X>\n", lib_get_ticks());
+		printf("<Ticks:%08X>\n", get_ticks());
 		usleep(20000);
     }
 }
@@ -83,6 +91,7 @@ int kernel_main()
 	process_t* proc = proc_table;
 	char* current_task_stack = task_stack + STACK_SIZE_TOTAL;
 	u16 selector_ldt = SELECTOR_LDT_FIRST;
+	int priority;
 	for (int i = 0; i < NUM_TASKS + NUM_PROCS; ++i)
 	{
 		u8 privilege;
@@ -94,6 +103,7 @@ int kernel_main()
 			privilege = PRIVILEGE_TASK;
 			rpl = RPL_TASK;
 			eflags = 0x1202; // IF=1, IOPL=1, bit 2 is always 1
+			priority = 15;
 		}
 		else // User processes
 		{
@@ -101,6 +111,7 @@ int kernel_main()
 			privilege = PRIVILEGE_USER;
 			rpl = RPL_USER;
 			eflags = 0x202; // IF=1, bit 2 is always 1
+			priority = 5;
 		}
 		strncpy(proc->process_name, task->name, 16); // name of the process
 		proc->pid = i; // pid
@@ -121,20 +132,25 @@ int kernel_main()
 		proc->regs.eflags = eflags;
 		proc->tty_index = 0;
 
+		proc->process_flags = 0;
+		proc->msg = NULL;
+		proc->recvfrom = SR_TARGET_NONE;
+		proc->sendto = SR_TARGET_NONE;
+		proc->has_int_msg = false;
+		proc->sending = NULL;
+		proc->next_sending = NULL;
+
+		proc->ticks = proc->priority = priority;
+
 		current_task_stack -= task->stacksize;
 		proc++;
 		task++;
 		selector_ldt += 1 << 3;
 	}
-
-	proc_table[0].ticks = proc_table[0].priority = 15;
-	proc_table[1].ticks = proc_table[1].priority = 5;
-	proc_table[2].ticks = proc_table[2].priority = 3;
-	proc_table[3].ticks = proc_table[3].priority = 1;
 	
-	proc_table[1].tty_index = 0;
-	proc_table[2].tty_index = 1;
-	proc_table[3].tty_index = 1;
+	proc_table[NUM_TASKS + 0].tty_index = 0;
+	proc_table[NUM_TASKS + 1].tty_index = 1;
+	proc_table[NUM_TASKS + 2].tty_index = 1;
 
 	k_reenter = 0;
 	sys_tick_count = 0;
@@ -163,17 +179,82 @@ void schedual()
 	{
 		for (process_t* p = proc_table; p < proc_table + NUM_TASKS + NUM_PROCS; ++p)
 		{
-			if (p->ticks > greatest_ticks)
+			if (p->process_flags == 0)
 			{
-				greatest_ticks = p->ticks;
-				p_proc_ready = p;
+				if (p->ticks > greatest_ticks)
+				{
+					greatest_ticks = p->ticks;
+					p_proc_ready = p;
+				}
 			}
 		}
 
 		if (!greatest_ticks)
 		{
 			for (process_t* p = proc_table; p < proc_table + NUM_TASKS + NUM_PROCS; ++p)
-				p->ticks = p->priority;
+			{
+				if (p->process_flags == 0)
+					p->ticks = p->priority;
+			}
 		}
 	}
+}
+
+int process_get_linear_address(const process_t* p, int idx)
+{
+	const descriptor_t* desc = &p->ldts[idx];
+	return desc->base_high << 24 | desc->base_mid << 16 | desc->base_low;
+}
+
+void* va2la(int pid, const void* virtual_address)
+{
+	const process_t* proc = &proc_table[pid];
+	u32 linear_address =  process_get_linear_address(proc, LDT_RW) + (u32)virtual_address;
+
+	if (pid < NUM_TASKS + NUM_PROCS)
+		assert(linear_address == (u32)virtual_address);
+
+	return (void*)linear_address;
+}
+
+void process_block(process_t* proc)
+{
+	assert(proc->process_flags);
+	schedual();
+}
+
+void process_unblock(process_t* proc)
+{
+	assert(proc->process_flags == 0);
+}
+
+bool process_check_deadlock(int src, int dst)
+{
+	process_t* proc = proc_table + dst;
+	while (true)
+	{
+		if (proc->process_flags & SR_STATUS_SENDING)
+		{
+			if (proc->sendto == src)
+			{
+				char buffer[1024] = "=_=";
+				strcat(buffer, proc->process_name);
+				do
+				{
+					assert(proc->msg);
+					proc = proc_table + proc->sendto;
+					strcat(buffer, "->");
+					strcat(buffer, proc->process_name);
+				} while (proc != proc_table + src);
+				strcat(buffer, "=_=");
+
+				return true;
+			}	
+			proc = proc_table + proc->sendto;
+		}
+		else
+			break;
+	}
+	
+	return false;
 }

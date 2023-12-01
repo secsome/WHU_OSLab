@@ -40,6 +40,7 @@ enum
     CONSOLE_SCREEN_SIZE = CONSOLE_SCREEN_WIDTH * CONSOLE_SCREEN_HEIGHT,
 };
 
+#define MAKE_COLOR(back, fore) ((back << 4) | fore)
 enum
 {
     COLOR_BLACK = 0x0,    /* 0000 */
@@ -49,6 +50,7 @@ enum
     COLOR_BLUE = 0x1,     /* 0001 */
     COLOR_FLASH = 0x80,   /* 1000 0000 */
     COLOR_BRIGHT = 0x08,  /* 0000 1000 */
+    COLOR_GRAY = MAKE_COLOR(COLOR_BLACK, COLOR_BLACK) | COLOR_BRIGHT,
 };
 
 bool console_is_current(console_t* console);

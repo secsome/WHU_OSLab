@@ -1,16 +1,35 @@
 BITS 32
 
+extern syscall_param0
+extern syscall_param1
+extern syscall_param2
+
 [SECTION .text]
-; int lib_get_ticks()
-global lib_get_ticks
-lib_get_ticks:
+; u32 lib_write(const char* buffer, u32 length)
+global lib_write
+lib_write:
+    mov [syscall_param0], ecx
+    mov [syscall_param1], edx
     mov eax, 0
     int 0x90
     ret
 
-; u32 lib_write(const char* buffer, u32 length)
-global lib_write
-lib_write:
+; u32 lib_sendrecv(u32 mode, u32 target, const message_t* msg)
+global lib_sendrecv
+lib_sendrecv:
+    mov [syscall_param0], ecx
+    mov [syscall_param1], edx
+    mov eax, [esp + 4]
+    mov [syscall_param2], eax
     mov eax, 1
+    int 0x90
+    ret 4
+
+; u32 lib_writex(const char* s)
+global lib_writex
+lib_writex:
+    mov [syscall_param0], ecx
+    mov [syscall_param1], edx
+    mov eax, 2
     int 0x90
     ret
