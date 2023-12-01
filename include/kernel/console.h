@@ -1,6 +1,9 @@
 #pragma once
 
+#include <kernel/const.h>
 #include <kernel/type.h>
+
+HEADER_CPP_BEGIN
 
 typedef struct console_t
 {
@@ -53,3 +56,5 @@ void console_put_char(console_t* console, char ch);
 void console_flush(console_t* console);
 void console_select(u32 console_id);
 void console_scroll(console_t* console, bool up);
+
+HEADER_CPP_END

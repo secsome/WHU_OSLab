@@ -1,6 +1,9 @@
 #pragma once
 
+#include <kernel/const.h>
 #include <kernel/type.h>
+
+HEADER_CPP_BEGIN
 
 // 存储段描述符/系统段描述符
 typedef struct descriptor_t
@@ -186,3 +189,5 @@ enum
 	INT_VECTOR_IRQ0 = 0x20,
 	INT_VECTOR_IRQ8 = 0x28,
 };
+
+HEADER_CPP_END

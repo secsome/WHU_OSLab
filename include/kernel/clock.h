@@ -1,5 +1,9 @@
 #pragma once
 
+#include <kernel/const.h>
+
+HEADER_CPP_BEGIN
+
 // 8253/8254 PIT (Programmable Interval Timer)
 enum 
 {
@@ -12,3 +16,5 @@ enum
 
 void init_clock();
 void clock_handler(int irq);
+
+HEADER_CPP_END

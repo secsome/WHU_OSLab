@@ -1,5 +1,9 @@
 #pragma once
 
+#include <kernel/const.h>
+
+HEADER_CPP_BEGIN
+
 typedef int errno_t;
 
 extern errno_t errno;
@@ -89,3 +93,5 @@ enum
     ETXTBSY = 139,
     EWOULDBLOCK = 140
 };
+
+HEADER_CPP_END

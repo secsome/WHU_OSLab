@@ -1,7 +1,10 @@
 // Teleprinter (TTY)
 #pragma once
 
+#include <kernel/const.h>
 #include <kernel/type.h>
+
+HEADER_CPP_BEGIN
 
 enum
 {
@@ -26,3 +29,5 @@ void task_tty();
 void tty_process_input(tty_t* tty, u32 key);
 void tty_init_screen(tty_t* tty);
 u32 tty_write(tty_t* tty, const char* buffer, u32 length);
+
+HEADER_CPP_END

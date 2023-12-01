@@ -1,5 +1,9 @@
 #pragma once
 
+#include <kernel/const.h>
+
+HEADER_CPP_BEGIN
+
 typedef	unsigned int    u32;
 typedef	unsigned short  u16;
 typedef	unsigned char   u8;
@@ -24,3 +28,5 @@ typedef void (*farproc_t)();
         #endif // true
     #endif // TYPE_BOOL_DEFINED
 #endif // __cplusplus
+
+HEADER_CPP_END

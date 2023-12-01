@@ -3,6 +3,8 @@
 #include <kernel/const.h>
 #include <kernel/type.h>
 
+HEADER_CPP_BEGIN
+
 void* memcpy(void* p_dst, const void* p_src, size_t size);
 
 void* memset(void* s, int c, size_t n);
@@ -68,3 +70,5 @@ char* strtok(char* s, const char* delim);
 
 // Transforms src to the current locale and copies the first n bytes to dest.
 // size_t strxfrm(char* dest, const char* src, size_t n);
+
+HEADER_CPP_END

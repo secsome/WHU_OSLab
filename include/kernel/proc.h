@@ -1,8 +1,10 @@
 #pragma once
 
+#include <kernel/const.h>
 #include <kernel/type.h>
 #include <kernel/protect.h>
-#include <kernel/const.h>
+
+HEADER_CPP_BEGIN
 
 typedef struct stackframe_t
 {
@@ -69,3 +71,5 @@ extern task_t system_task_table[NUM_TASKS];
 extern task_t user_proc_table[NUM_PROCS];
 
 void schedual();
+
+HEADER_CPP_END

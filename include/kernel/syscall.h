@@ -4,6 +4,8 @@
 #include <kernel/type.h>
 #include <kernel/proc.h>
 
+HEADER_CPP_BEGIN
+
 enum
 {
     SYSCALL_NUMINT = 0x90, // int 0x90
@@ -19,3 +21,5 @@ extern u32 sys_tick_count;
 u32 sys_get_ticks();
 
 u32 sys_write(const char* buffer, u32 length, const process_t* process);
+
+HEADER_CPP_END

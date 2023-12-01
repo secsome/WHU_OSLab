@@ -1,6 +1,9 @@
 #pragma once
 
+#include <kernel/const.h>
 #include <kernel/type.h>
+
+HEADER_CPP_BEGIN
 
 enum
 {
@@ -110,3 +113,5 @@ struct tty_t;
 void init_keyboard();
 void keyboard_handler(int irq);
 void keyboard_read(struct tty_t* tty);
+
+HEADER_CPP_END

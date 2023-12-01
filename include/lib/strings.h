@@ -3,6 +3,8 @@
 #include <kernel/const.h>
 #include <kernel/type.h>
 
+HEADER_CPP_BEGIN
+
 // STRING(3)
 // Compare the strings s1 and s2 ignoring case.
 int strcasecmp(const char* s1, const char* s2);
@@ -15,3 +17,5 @@ char* index(const char* s, int c);
 
 // Return a pointer to the last occurrence of the character c in the string s.
 char* rindex(const char* s, int c);
+
+HEADER_CPP_END

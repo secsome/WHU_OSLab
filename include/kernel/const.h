@@ -18,6 +18,22 @@
     #define CFUNCTION extern "C"
 #endif // CFUNCTION
 
+#ifndef HEADER_CPP_BEGIN
+    #ifdef __cplusplus
+        #define HEADER_CPP_BEGIN extern "C" {
+    #else
+        #define HEADER_CPP_BEGIN
+    #endif 
+#endif // HEADER_CPP_BEGIN
+
+#ifndef HEADER_CPP_END
+    #ifdef __cplusplus
+        #define HEADER_CPP_END }
+    #else
+        #define HEADER_CPP_END
+    #endif
+#endif // HEADER_CPP_END
+
 /* GDT 和 IDT 中描述符的个数 */
 enum 
 {
