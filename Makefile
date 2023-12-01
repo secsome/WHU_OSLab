@@ -1,5 +1,5 @@
 # It must have the same value with 'KernelEntryPointPhyAddr' in load.inc!
-ENTRYPOINT	= 0x30400
+ENTRYPOINT	= 0x400400
 
 # Offset of entry point in kernel file
 # It depends on ENTRYPOINT
