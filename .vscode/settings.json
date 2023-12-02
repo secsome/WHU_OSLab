@@ -9,6 +9,8 @@
         "atomic": "c",
         "cmath": "c",
         "functional": "c",
-        "__functional_03": "c"
+        "__functional_03": "c",
+        "ratio": "c",
+        "compare": "c"
     }
 }

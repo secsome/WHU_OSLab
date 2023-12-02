@@ -15,7 +15,7 @@ ASMBFLAGS	= -g -I boot/include/
 ASMKFLAGS	= -g -I include/kernel/ -f elf
 CFLAGS		= -g -Wall -fno-pie -masm=intel -std=c17 -m32 -fno-stack-protector -I include/ -c -fno-builtin
 CPPFLAGS	= -g -Wall -fno-pie -masm=intel -std=c++20 -m32 -fno-stack-protector -I include/ -c -fno-builtin
-LDFLAGS		= -melf_i386 -flto=thin -Ttext $(ENTRYPOINT)
+LDFLAGS		= -melf_i386 -flto -Ttext $(ENTRYPOINT)
 DASMFLAGS	= -u -o $(ENTRYPOINT) -e $(ENTRYOFFSET)
 
 # This Program
@@ -30,14 +30,16 @@ OBJS		= 	kernel/kernel.o kernel/start.o kernel/i8259.o kernel/global.o kernel/pr
 DASMOUTPUT	= kernel.bin.asm
 
 # All Phony Targets
-.PHONY : everything final image clean realclean disasm all buildimg
+.PHONY : everything final image clean realclean disasm all buildimg split
 
 # Default starting position
 everything : $(BINBOOT) $(BINKERNEL)
+
+split : everything
 	objcopy --only-keep-debug $(BINKERNEL) $(SYMKERNEL)
 	strip --strip-debug $(BINKERNEL)
 
-all : realclean everything
+all : realclean split
 
 final : all clean
 

@@ -130,7 +130,7 @@ char* strncat(char* dest, const char* src, size_t n)
 
 int strncmp(const char* s1, const char* s2, size_t n)
 {
-    u8 u1, u2;
+    u8 u1 = 0, u2 = 0;
 
     for (size_t i = 0 ; i < n; s1++, s2++) 
     {

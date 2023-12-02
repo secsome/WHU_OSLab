@@ -171,6 +171,37 @@ arith64_u64 __divmoddi4(arith64_u64 a, arith64_u64 b, arith64_u64 *c)
     return (a << 1) | (wrap & 1);               // return the quotient
 }
 
+// Super slow, but it works.
+arith64_u64 __udivmoddi4(arith64_u64 a, arith64_u64 b, arith64_u64 *c)
+{
+    arith64_u64 quot = 0, qbit = 1;
+
+    if (b == 0)
+        return 1 / ((unsigned)b); // Division by zero exception
+    
+    // Left-justify denominator and count shift
+    while ((arith64_s64)b >= 0)
+    {
+        b <<= 1;
+        qbit <<= 1;
+    }
+    while (qbit)
+    {
+        if (b <= a)
+        {
+            a -= b;
+            quot += qbit;
+        }
+        b >>= 1;
+        qbit >>= 1;
+    }
+ 
+    if (c)
+        *c = a;
+    
+    return quot;
+}
+
 // Return the quotient of the signed division of a and b.
 arith64_s64 __divdi3(arith64_s64 a, arith64_s64 b)
 {
