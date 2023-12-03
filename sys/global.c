@@ -1,8 +1,8 @@
-#include <kernel/type.h>
-#include <kernel/const.h>
-#include <kernel/protect.h>
-#include <kernel/proto.h>
-#include <kernel/global.h>
+#include <sys/type.h>
+#include <sys/const.h>
+#include <sys/protect.h>
+#include <sys/proto.h>
+#include <sys/global.h>
 
 u8 gdt_ptr[6];	/* 0~15:Limit  16~47:Base */
 descriptor_t gdt[GDT_SIZE];

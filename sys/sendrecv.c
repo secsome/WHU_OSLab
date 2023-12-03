@@ -1,5 +1,5 @@
-#include <kernel/sendrecv.h>
-#include <kernel/proc.h>
+#include <sys/sendrecv.h>
+#include <sys/proc.h>
 
 #include <lib/string.h>
 #include <lib/assert.h>

@@ -1,8 +1,8 @@
-#include <kernel/type.h>
-#include <kernel/debug.h>
-#include <kernel/proc.h>
-#include <kernel/console.h>
-#include <kernel/sendrecv.h>
+#include <sys/type.h>
+#include <sys/debug.h>
+#include <sys/proc.h>
+#include <sys/console.h>
+#include <sys/sendrecv.h>
 
 #include <lib/printf.h>
 #include <lib/asm.h>

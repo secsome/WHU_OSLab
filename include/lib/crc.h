@@ -1,6 +1,6 @@
 #pragma once
 
-#include <kernel/const.h>
+#include <sys/const.h>
 #include <lib/stdint.h>
 
 HEADER_CPP_BEGIN

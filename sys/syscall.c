@@ -1,5 +1,5 @@
-#include <kernel/syscall.h>
-#include <kernel/tty.h>
+#include <sys/syscall.h>
+#include <sys/tty.h>
 
 system_call sys_call_table[SYSCALL_COUNT] = 
 {

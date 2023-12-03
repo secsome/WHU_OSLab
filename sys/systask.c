@@ -1,6 +1,6 @@
-#include <kernel/systask.h>
-#include <kernel/sendrecv.h>
-#include <kernel/clock.h>
+#include <sys/systask.h>
+#include <sys/sendrecv.h>
+#include <sys/clock.h>
 #include <lib/assert.h>
 
 void task_sys()

@@ -1,6 +1,6 @@
 #pragma once
 
-#include <kernel/const.h>
+#include <sys/const.h>
 
 #ifndef TYPE_PTRDIFF_DEFINED
     #define TYPE_PTRDIFF_DEFINED

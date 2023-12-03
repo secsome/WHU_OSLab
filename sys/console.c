@@ -1,4 +1,4 @@
-#include <kernel/console.h>
+#include <sys/console.h>
 #include <lib/asm.h>
 
 console_t consoles_table[NUM_CONSOLES];

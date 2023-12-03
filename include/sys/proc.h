@@ -1,8 +1,8 @@
 #pragma once
 
-#include <kernel/const.h>
-#include <kernel/type.h>
-#include <kernel/protect.h>
+#include <sys/const.h>
+#include <sys/type.h>
+#include <sys/protect.h>
 
 HEADER_CPP_BEGIN
 

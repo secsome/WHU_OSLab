@@ -1,4 +1,4 @@
-%include "sconst.inc"
+%include "sys/sconst.inc"
 
 ; 导入函数
 extern	cstart

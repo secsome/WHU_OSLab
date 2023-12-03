@@ -1,5 +1,5 @@
 #include <fs/core.h>
-#include <kernel/sendrecv.h>
+#include <sys/sendrecv.h>
 #include <lib/syscall.h>
 #include <lib/assert.h>
 

@@ -1,8 +1,8 @@
-#include <kernel/harddisk.h>
-#include <kernel/sendrecv.h>
-#include <kernel/debug.h>
-#include <kernel/proc.h>
-#include <kernel/clock.h>
+#include <sys/harddisk.h>
+#include <sys/sendrecv.h>
+#include <sys/debug.h>
+#include <sys/proc.h>
+#include <sys/clock.h>
 
 #include <lib/assert.h>
 #include <lib/printf.h>

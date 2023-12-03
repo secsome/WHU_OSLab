@@ -1,7 +1,7 @@
 #include <lib/clock.h>
-#include <kernel/clock.h>
-#include <kernel/systask.h>
-#include <kernel/sendrecv.h>
+#include <sys/clock.h>
+#include <sys/systask.h>
+#include <sys/sendrecv.h>
 #include <lib/syscall.h>
 
 u32 get_ticks()

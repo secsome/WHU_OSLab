@@ -1,5 +1,5 @@
-#include <kernel/clock.h>
-#include <kernel/proc.h>
+#include <sys/clock.h>
+#include <sys/proc.h>
 #include <lib/asm.h>
 #include <lib/display.h>
 

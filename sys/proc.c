@@ -1,11 +1,11 @@
-#include <kernel/proc.h>
-#include <kernel/global.h>
-#include <kernel/clock.h>
-#include <kernel/keyboard.h>
-#include <kernel/tty.h>
-#include <kernel/syscall.h>
-#include <kernel/sendrecv.h>
-#include <kernel/harddisk.h>
+#include <sys/proc.h>
+#include <sys/global.h>
+#include <sys/clock.h>
+#include <sys/keyboard.h>
+#include <sys/tty.h>
+#include <sys/syscall.h>
+#include <sys/sendrecv.h>
+#include <sys/harddisk.h>
 
 #include <lib/asm.h>
 #include <lib/syscall.h>

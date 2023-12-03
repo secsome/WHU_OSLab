@@ -12,7 +12,7 @@ CC		= gcc
 CPP		= g++
 LD		= ld
 ASMBFLAGS	= -g -I boot/include/
-ASMKFLAGS	= -g -I include/kernel/ -f elf
+ASMKFLAGS	= -g -I include/ -f elf
 CFLAGS		= -g -Wall -fno-pie -masm=intel -std=c17 -m32 -fno-stack-protector -I include/ -c -fno-builtin
 CPPFLAGS	= -g -Wall -fno-pie -masm=intel -std=c++20 -m32 -fno-stack-protector -I include/ -c -fno-builtin
 LDFLAGS		= -melf_i386 -flto -Ttext $(ENTRYPOINT)
@@ -22,9 +22,9 @@ DASMFLAGS	= -u -o $(ENTRYPOINT) -e $(ENTRYOFFSET)
 BINBOOT	= boot/boot.bin boot/loader.bin
 BINKERNEL	= kernel.bin
 SYMKERNEL = kernel.dbg
-OBJS		= 	kernel/kernel.o kernel/start.o kernel/i8259.o kernel/global.o kernel/protect.o kernel/proc.o kernel/clock.o \
-				kernel/syscall.o kernel/keyboard.o kernel/tty.o kernel/console.o kernel/arith64.o kernel/sendrecv.o \
-				kernel/systask.o kernel/debug.o kernel/harddisk.o \
+OBJS		= 	sys/kernel.o sys/start.o sys/i8259.o sys/global.o sys/protect.o sys/proc.o sys/clock.o \
+				sys/syscall.o sys/keyboard.o sys/tty.o sys/console.o sys/arith64.o sys/sendrecv.o \
+				sys/systask.o sys/debug.o sys/harddisk.o \
 				lib/asm.o lib/string.o lib/strings.o lib/display.o lib/syscall.o lib/clock.o lib/crc.o lib/ctype.o \
 				lib/printf.o lib/stdlib.o lib/errno.o lib/puts.o lib/assert.o \
 				fs/main.o
@@ -81,13 +81,13 @@ boot/loader.bin : boot/loader.asm boot/include/load.inc \
 $(BINKERNEL) : $(OBJS)
 	$(LD) $(LDFLAGS) -o $(BINKERNEL) $(OBJS)
 
-kernel/%.o : kernel/%.asm
+sys/%.o : sys/%.asm
 	$(ASM) $(ASMKFLAGS) -o $@ $<
 
-kernel/%.o: kernel/%.c
+sys/%.o: sys/%.c
 	$(CC) $(CFLAGS) -o $@ $<
 
-kernel/%.o: kernel/%.cpp
+sys/%.o: sys/%.cpp
 	$(CPP) $(CPPFLAGS) -o $@ $<
 
 lib/%.o : lib/%.asm

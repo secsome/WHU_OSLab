@@ -1,7 +1,7 @@
 #pragma once
 
-#include <kernel/const.h>
-#include <kernel/type.h>
+#include <sys/const.h>
+#include <sys/type.h>
 
 HEADER_CPP_BEGIN
 

@@ -1,4 +1,4 @@
-#include <kernel/protect.h>
+#include <sys/protect.h>
 #include <lib/display.h>
 #include <lib/asm.h>
 

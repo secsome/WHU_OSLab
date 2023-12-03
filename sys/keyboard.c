@@ -1,6 +1,6 @@
-#include <kernel/keyboard.h>
-#include <kernel/tty.h>
-#include <kernel/protect.h>
+#include <sys/keyboard.h>
+#include <sys/tty.h>
+#include <sys/protect.h>
 #include <lib/display.h>
 #include <lib/asm.h>
 

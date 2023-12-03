@@ -1,7 +1,7 @@
-#include <kernel/tty.h>
-#include <kernel/keyboard.h>
-#include <kernel/console.h>
-#include <kernel/proc.h>
+#include <sys/tty.h>
+#include <sys/keyboard.h>
+#include <sys/console.h>
+#include <sys/proc.h>
 #include <lib/display.h>
 #include <lib/asm.h>
 #include <lib/assert.h>

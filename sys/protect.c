@@ -1,6 +1,6 @@
-#include <kernel/protect.h>
-#include <kernel/global.h>
-#include <kernel/syscall.h>
+#include <sys/protect.h>
+#include <sys/global.h>
+#include <sys/syscall.h>
 #include <lib/display.h>
 #include <lib/string.h>
 

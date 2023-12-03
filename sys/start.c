@@ -1,5 +1,5 @@
-#include <kernel/protect.h>
-#include <kernel/global.h>
+#include <sys/protect.h>
+#include <sys/global.h>
 #include <lib/asm.h>
 #include <lib/display.h>
 #include <lib/string.h>

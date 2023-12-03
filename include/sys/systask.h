@@ -1,4 +1,4 @@
-#include <kernel/const.h>
+#include <sys/const.h>
 
 HEADER_CPP_BEGIN
 
