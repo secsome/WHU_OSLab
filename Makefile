@@ -31,10 +31,16 @@ OBJS		= 	kernel/kernel.o kernel/start.o kernel/i8259.o kernel/global.o kernel/pr
 DASMOUTPUT	= kernel.bin.asm
 
 # All Phony Targets
-.PHONY : everything final image clean realclean disasm all buildimg split
+.PHONY : everything final image clean realclean disasm all buildimg split compress decompress
 
 # Default starting position
 everything : $(BINBOOT) $(BINKERNEL)
+
+compress : harddisk.img
+	gzip harddisk.img
+
+decompress : harddisk.img.gz
+	gunzip harddisk.img.gz
 
 split : everything
 	objcopy --only-keep-debug $(BINKERNEL) $(SYMKERNEL)
