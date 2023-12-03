@@ -19,5 +19,11 @@ FASTCALL void enable_int();
 FASTCALL bool init_fpu();
 FASTCALL void halt();
 FASTCALL void ud2();
+FASTCALL void port_read(u16 port, void* buffer, u32 size);
+FASTCALL void port_write(u16 port, const void* buffer, u32 size);
+FASTCALL u8 rotl_byte(u8 value, u8 count);
+FASTCALL u8 rotr_byte(u8 value, u8 count);
+FASTCALL u32 read_eflags();
+FASTCALL void write_eflags(u32 eflags);
 
 HEADER_CPP_END

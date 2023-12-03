@@ -21,7 +21,8 @@ https://github.com/secsome/WHU_OSLab/assets/41946354/1d8b886a-53a7-4363-9cca-519
       2. `cd WHU_OSLab`
       3. `vscode`
    - Or just open this workdir In `Visual Studio Code` manually
-2. Press `F5` to launch the simulation. `Ctrl + Shift + B` for `make image`.
+2. `gzip -d harddisk.img.gz` to extract the compressed harddisk image
+3. Press `F5` to launch the simulation. `Ctrl + Shift + B` for `make image`.
 
 ## Features:
 - Full source code debug, both .asm and .c files are supported

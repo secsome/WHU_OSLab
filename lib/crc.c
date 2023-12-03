@@ -1,6 +1,6 @@
 #include <lib/crc.h>
 
-static u32 crc32_table[256] = 
+static uint32_t crc32_table[256] = 
 {
 	0x00000000, 0x77073096, 0xEE0E612C, 0x0990951B, 0x076DC419, 0x706AF48F, 0xE963A535, 0x9E6495A3,
 	0x0EDB8832, 0x79DCB8A4, 0xE0D5E91E, 0x97D2D988, 0x09B64C2B, 0x7EB17CBD, 0xE7B82D07, 0x90BF1D91,
@@ -36,12 +36,12 @@ static u32 crc32_table[256] =
 	0xB3667A2E, 0xC4614AB8, 0x5D681B02, 0x2A6F2B94, 0xB40BBE37, 0xC30C8EA1, 0x5A05DF1B, 0x2D02EF8D
 };
 
-u32 crc32_calculate(const void* data, u32 length, u32 crc)
+uint32_t crc32_calculate(const void* data, uint32_t length, uint32_t crc)
 {
-	const u8* buffer = (const u8*)data;
-	u32 ret = ~crc;
+	const uint8_t* buffer = (const uint8_t*)data;
+	uint32_t ret = ~crc;
 
-	for (u32 i = 0; i < length; ++i)
+	for (uint32_t i = 0; i < length; ++i)
 		ret = (ret >> 8) ^ crc32_table[*buffer++ ^ (ret & 0xFF)];	
 	
 	return ~ret;

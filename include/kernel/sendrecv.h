@@ -56,8 +56,14 @@ enum
     SR_TARGET_ANY = -1,
     SR_TARGET_INTERRUPT = -2,
     SR_TARGET_NONE = -3,
+};
+
+enum
+{
     SR_MSGTYPE_HARDINT = 1,
     SR_MSGTYPE_GET_TICKS = 2,
+
+    SR_MSGTYPE_DEVOPEN = 1001,
 };
 
 u32 sendrecv_impl(u32 mode, u32 target, message_t* msg, process_t* process);

@@ -9,8 +9,12 @@ megs: 32
 romimage: file=/usr/local/share/bochs/BIOS-bochs-latest
 vgaromimage: file=/usr/share/vgabios/vgabios.bin
 
-# what disk images will be used
+# enable floppy disk
 floppya: 1_44=a.img, status=inserted
+
+# enable hard disk
+ata0: enabled = 1, ioaddr1 = 0x1f0, ioaddr2 = 0x3f0, irq = 14
+ata0-master: type=disk, path="harddisk.img", mode=flat
 
 # choose the boot disk.
 boot: a

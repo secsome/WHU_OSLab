@@ -21,16 +21,16 @@ void enable_irq(int irq)
 {
 	if (irq < 8)
 		out_byte(INT_M_CTLMASK, in_byte(INT_M_CTLMASK) & ~(1 << irq));
-	else
-		out_byte(INT_S_CTLMASK, in_byte(INT_S_CTLMASK) & ~(1 << irq));
+	else if (irq < 16)
+		out_byte(INT_S_CTLMASK, in_byte(INT_S_CTLMASK) & ~(1 << (irq - 8)));
 }
 
 void disable_irq(int irq)
 {
 	if (irq < 8)
 		out_byte(INT_M_CTLMASK, in_byte(INT_M_CTLMASK) | (1 << irq));
-	else
-		out_byte(INT_S_CTLMASK, in_byte(INT_S_CTLMASK) | (1 << irq));
+	else if (irq < 16)
+		out_byte(INT_S_CTLMASK, in_byte(INT_S_CTLMASK) | (1 << (irq - 8)));
 }
 
 void put_irq_handler(int irq, irq_handler handler)
@@ -53,6 +53,6 @@ void init_8259A()
 	out_byte(INT_M_CTLMASK,	0xFF);	// Master 8259, OCW1. 
 	out_byte(INT_S_CTLMASK,	0xFF);	// Slave  8259, OCW1. 
 
-	for (int i = 0; i < NUM_IRQ; ++i)
-		irq_table[i] = fake_irq;
+	for (auto& irq : irq_table)
+		irq = fake_irq;
 }

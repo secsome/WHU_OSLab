@@ -4,6 +4,8 @@
 #include <kernel/keyboard.h>
 #include <kernel/tty.h>
 #include <kernel/syscall.h>
+#include <kernel/sendrecv.h>
+#include <kernel/harddisk.h>
 
 #include <lib/asm.h>
 #include <lib/syscall.h>
@@ -12,6 +14,8 @@
 #include <lib/display.h>
 #include <lib/clock.h>
 #include <lib/assert.h>
+
+#include <fs/core.h>
 
 void TestA();
 void TestB();
@@ -28,12 +32,22 @@ task_t system_task_table[NUM_TASKS] =
 	{
 		task_tty,
 		STACK_SIZE_TTY,
-		"Teleprinter"
+		"TTY"
 	},
 	{
 		task_sys,
 		STACK_SIZE_SYS,
-		"SysTask"
+		"SYS"
+	},
+	{
+		task_harddisk,
+		STACK_SIZE_HARDDISK,
+		"HARDDISK"
+	},
+	{
+		task_fs,
+		STACK_SIZE_FILESYSTEM,
+		"FILESYSTEM"
 	}
 };
 task_t user_proc_table[NUM_PROCS] = 
@@ -257,4 +271,28 @@ bool process_check_deadlock(int src, int dst)
 	}
 	
 	return false;
+}
+
+void process_inform_interrupt(int target)
+{
+	process_t* proc = proc_table + target;
+	if ((proc->process_flags & SR_STATUS_RECEIVING) && 
+		((proc->recvfrom == SR_TARGET_INTERRUPT) || (proc->recvfrom == SR_TARGET_ANY)))
+	{
+		proc->msg->source = SR_TARGET_INTERRUPT;
+		proc->msg->type = SR_MSGTYPE_HARDINT;
+		proc->msg = NULL;
+		proc->has_int_msg = false;
+		proc->process_flags &= ~SR_STATUS_RECEIVING;
+		proc->recvfrom = SR_TARGET_NONE;
+		assert(proc->process_flags == 0);
+		process_unblock(proc);
+
+		assert(proc->process_flags == 0);
+		assert(proc->msg == NULL);
+		assert(proc->recvfrom == SR_TARGET_NONE);
+		assert(proc->sendto == SR_TARGET_NONE);
+	}
+	else
+		proc->has_int_msg = true;
 }

@@ -51,8 +51,16 @@ typedef struct process_t
 extern process_t* p_proc_ready;
 enum
 {
-    NUM_TASKS = 2,
+    NUM_TASKS = 4,
     NUM_PROCS = 3,   
+};
+
+enum 
+{
+    TASK_TTY = 0,
+    TASK_SYS = 1,
+    TASK_HARDDISK = 2,
+    TASK_FILESYSTEM = 3,
 };
 extern process_t proc_table[NUM_TASKS + NUM_PROCS];
 #define proc2pid(x) ((int)(x - proc_table))
@@ -61,15 +69,19 @@ void* va2la(int pid, const void* virtual_address);
 void process_block(process_t* proc);
 void process_unblock(process_t* proc);
 bool process_check_deadlock(int src, int dst);
+void process_inform_interrupt(int target);
 
 enum
 {
     STACK_SIZE_TTY = 0x8000,
     STACK_SIZE_SYS = 0x8000,
+    STACK_SIZE_HARDDISK = 0x8000,
+    STACK_SIZE_FILESYSTEM = 0x8000,
     STACK_SIZE_TESTA = 0x8000,
     STACK_SIZE_TESTB = 0x8000,
     STACK_SIZE_TESTC = 0x8000,
-    STACK_SIZE_TOTAL = STACK_SIZE_TTY + STACK_SIZE_SYS + STACK_SIZE_TESTA + STACK_SIZE_TESTB + STACK_SIZE_TESTC
+    STACK_SIZE_TOTAL = STACK_SIZE_TTY + STACK_SIZE_SYS + STACK_SIZE_HARDDISK + STACK_SIZE_FILESYSTEM +
+        STACK_SIZE_TESTA + STACK_SIZE_TESTB + STACK_SIZE_TESTC
 };
 extern char task_stack[STACK_SIZE_TOTAL];
 

@@ -24,9 +24,10 @@ BINKERNEL	= kernel.bin
 SYMKERNEL = kernel.dbg
 OBJS		= 	kernel/kernel.o kernel/start.o kernel/i8259.o kernel/global.o kernel/protect.o kernel/proc.o kernel/clock.o \
 				kernel/syscall.o kernel/keyboard.o kernel/tty.o kernel/console.o kernel/arith64.o kernel/sendrecv.o \
-				kernel/systask.o \
+				kernel/systask.o kernel/debug.o kernel/harddisk.o \
 				lib/asm.o lib/string.o lib/strings.o lib/display.o lib/syscall.o lib/clock.o lib/crc.o lib/ctype.o \
-				lib/printf.o lib/stdlib.o lib/errno.o lib/puts.o lib/assert.o
+				lib/printf.o lib/stdlib.o lib/errno.o lib/puts.o lib/assert.o \
+				fs/main.o
 DASMOUTPUT	= kernel.bin.asm
 
 # All Phony Targets
@@ -90,4 +91,13 @@ lib/%.o: lib/%.c
 	$(CC) $(CFLAGS) -o $@ $<
 
 lib/%.o: lib/%.cpp
+	$(CPP) $(CPPFLAGS) -o $@ $<
+
+fs/%.o : fs/%.asm
+	$(ASM) $(ASMKFLAGS) -o $@ $<
+
+fs/%.o: fs/%.c
+	$(CC) $(CFLAGS) -o $@ $<
+
+fs/%.o: fs/%.cpp
 	$(CPP) $(CPPFLAGS) -o $@ $<

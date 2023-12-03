@@ -98,4 +98,59 @@ global ud2
 ud2:
     ud2
     ret
-    
+
+; void port_read(u16 port, void* buffer, u32 size)
+global port_read
+port_read:
+    push edi
+    mov edi, edx ; buffer
+    mov edx, ecx ; port
+    mov ecx, [esp + 8] ; size
+    shr ecx, 1
+    cld
+    rep insw
+    pop edi
+    ret
+
+; void port_write(u16 port, const void* buffer, u32 size)
+global port_write
+port_write:
+    push edi
+    mov edi, edx ; buffer
+    mov edx, ecx ; port
+    mov ecx, [esp + 8] ; size
+    shr ecx, 1
+    cld
+    rep outsw
+    pop edi
+    ret
+
+; u8 rotl_byte(u8 value, u8 count)
+global rotl_byte
+rotl_byte:
+    mov al, cl ; value
+    mov cl, dl ; count
+    rol al, cl
+    ret 
+
+; u8 rotr_byte(u8 value, u8 count)
+global rotr_byte
+rotr_byte:
+    mov al, cl ; value
+    mov cl, dl ; count
+    ror al, cl
+    ret
+
+; u32 read_eflags()
+global read_eflags
+read_eflags:
+    pushf
+    pop eax
+    ret
+
+; void write_eflags(u32 eflags);
+global write_eflags
+write_eflags:
+    push eax
+    popf
+    ret 
