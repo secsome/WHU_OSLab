@@ -115,14 +115,14 @@ port_read:
 ; void port_write(u16 port, const void* buffer, u32 size)
 global port_write
 port_write:
-    push edi
-    mov edi, edx ; buffer
+    push esi
+    mov esi, edx ; buffer
     mov edx, ecx ; port
     mov ecx, [esp + 8] ; size
     shr ecx, 1
     cld
     rep outsw
-    pop edi
+    pop esi
     ret
 
 ; u8 rotl_byte(u8 value, u8 count)

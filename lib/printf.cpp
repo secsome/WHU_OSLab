@@ -4,6 +4,7 @@
 #include <lib/puts.h>
 #include <lib/stdint.h>
 #include <lib/stddef.h>
+#include <lib/syscall.h>
 
 HEADER_CPP_BEGIN
 
@@ -768,6 +769,33 @@ int vprintf(const char *format, va_list va)
 int vsnprintf(char *buffer, size_t count, const char *format, va_list va)
 {
     return vsnprintf_internal(out_buffer_internal, buffer, count, format, va);
+}
+
+static constexpr void printl_out_char_internal(char character, void *buffer, size_t idx, size_t maxlen)
+{
+    // UNREFERENCED_PARAMETER(buffer);
+    // UNREFERENCED_PARAMETER(idx);
+    // UNREFERENCED_PARAMETER(maxlen);
+    if (character)
+    {
+        char buffer[2] = { character, 0 };
+        lib_writex(buffer);
+    }
+}
+int printl(const char *format, ...)
+{
+    va_list va;
+    va_start(va, format);
+    char buffer[1];
+    const int ret = vsnprintf_internal(printl_out_char_internal, buffer, (size_t)-1, format, va);
+    va_end(va);
+    return ret;
+}
+
+int vprintl(const char* format, va_list va)
+{
+    char buffer[1];
+    return vsnprintf_internal(printl_out_char_internal, buffer, (size_t)-1, format, va);
 }
 
 HEADER_CPP_END

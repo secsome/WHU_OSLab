@@ -52,7 +52,7 @@ enum
     SR_MSGTYPE_DEVCLOSE,
     SR_MSGTYPE_DEVREAD,
     SR_MSGTYPE_DEVWRITE,
-    SR_MSGTYPE_IOCTL,
+    SR_MSGTYPE_DEVIOCTL,
 };
 
 u32 sendrecv_impl(u32 mode, u32 target, message_t* msg, process_t* process);

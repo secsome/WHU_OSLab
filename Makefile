@@ -27,7 +27,7 @@ OBJS		= 	sys/kernel.o sys/start.o sys/i8259.o sys/global.o sys/protect.o sys/pro
 				sys/systask.o sys/debug.o sys/harddisk.o \
 				lib/asm.o lib/string.o lib/strings.o lib/display.o lib/syscall.o lib/clock.o lib/crc.o lib/ctype.o \
 				lib/printf.o lib/stdlib.o lib/errno.o lib/puts.o lib/assert.o \
-				fs/main.o fs/device.o
+				fs/main.o fs/device.o fs/core.o
 DASMOUTPUT	= kernel.bin.asm
 
 # All Phony Targets

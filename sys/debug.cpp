@@ -42,17 +42,9 @@ void debug_dump_message(const char* title, const struct message_t* message)
 {
     constexpr bool packed = false;
 	constexpr const char* space = packed ? "" : "\n        ";
-	char buffer[1024] = { 0 };
-	char content[1024] = { 0 };
+	printl("{%s}<0x%08X>{%ssrc:%s(%d),%stype:%d,%s(\n",
+		title, message, space, proc_table[message->source].process_name, message->source, space, message->type, space);
 	for (size_t i = 0; i < sizeof(message_t) - 8; ++i)
-	{
-		char tmp[16] = { 0 };
-		snprintf(tmp, sizeof(tmp), "%02X ", message->m_raw[i]);
-		strcat(content, tmp);
-	}
-	snprintf(buffer, sizeof(buffer), 
-		"{%s}<0x%08X>{%ssrc:%s(%d),%stype:%d,%s(\n%s\n)%s}%s",
-		title, message, space, proc_table[message->source].process_name, message->source, space, message->type, space,
-		content, space, space);
-	lib_writex(buffer);
+		printl("%02X ", message->m_raw[i]);
+	printl("\n)%s}%s", space, space);
 }

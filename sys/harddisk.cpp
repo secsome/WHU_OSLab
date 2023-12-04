@@ -55,7 +55,7 @@ void task_harddisk()
 		case SR_MSGTYPE_DEVWRITE:
 			harddisk_readwrite(msg);
 			break;
-		case SR_MSGTYPE_IOCTL:
+		case SR_MSGTYPE_DEVIOCTL:
 			harddisk_ioctl(msg);
 			break;
         default:
@@ -73,9 +73,7 @@ static void harddisk_init()
 {
     // Get the number of drives from the BIOS data area
     const u8 drive_count = *(u8*)(0x475);
-    char buffer[64] = { 0 };
-    snprintf(buffer, sizeof(buffer), "Drive count:%d.\n", drive_count);
-	lib_writex(buffer);
+    printl("Drive count:%d.\n", drive_count);
     assert(drive_count);
 
     put_irq_handler(AT_WINI_IRQ, harddisk_handler);
@@ -250,49 +248,48 @@ static void harddisk_partition(int device, int style)
 
 static void harddisk_print_harddisk_info(const harddisk_info_t* info)
 {
-	char buffer[1024] = { 0 };
 	for (int i = 0; i < HD_NUM_PART_PER_DRIVE + 1; ++i)
 	{
-		snprintf(buffer, sizeof(buffer), "%sPART_%d: base %d(0x%x), size %d(0x%x) (in sector)\n",
+		printl("%sPART_%d: base %d(0x%x), size %d(0x%x) (in sector)\n",
 			i == 0 ? " " : "     ",
 			i,
 			info->primary[i].base,
 			info->primary[i].base,
 			info->primary[i].size,
 			info->primary[i].size);
-		lib_writex(buffer);
 	}
 	
 	for (int i = 0; i < HD_NUM_SUB_PER_DRIVE; ++i)
 	{
 		if (info->logical[i].size == 0)
 			continue;
-		snprintf(buffer, sizeof(buffer), "         "
+		printl("         "
 			"%d: base %d(0x%x), size %d(0x%x) (in sector)\n",
 			i,
 			info->logical[i].base,
 			info->logical[i].base,
 			info->logical[i].size,
 			info->logical[i].size);
-		lib_writex(buffer);
 	}
 }
 
 static void harddisk_identify(int drive)
 {
 	harddisk_command_t cmd;
-	cmd.device  = MAKE_DEVICE_REG(0, drive, 0);
+	cmd.device = MAKE_DEVICE_REG(0, drive, 0);
 	cmd.command = HD_ATA_IDENTIFY;
 	harddisk_command_out(&cmd);
 	harddisk_interrupt_wait();
 	port_read(HD_REG_DATA, harddisk_buffer, HD_SECTOR_SIZE);
-	harddisk_print_identify_info((u16*)harddisk_buffer);
+	
+	const auto hdinfo = reinterpret_cast<u16*>(harddisk_buffer);
+	harddisk_print_identify_info(hdinfo);
+	harddisk_info[drive].primary[0].base = 0;
+	harddisk_info[drive].primary[0].size = ((int)hdinfo[61] << 16) + hdinfo[60];
 }
 
 static void harddisk_print_identify_info(u16* hdinfo)
 {
-    char buffer[64] = { 0 };
-
 	struct identify_info_ascii_t
 	{
 		int idx;
@@ -315,21 +312,18 @@ static void harddisk_print_identify_info(u16* hdinfo)
 			s[i * 2] = *p++;
 		}
 		s[i * 2] = 0;
-        snprintf(buffer, sizeof(buffer), "%s: %s\n", info.desc, s);
-		lib_writex(buffer);
+		
+        printl("%s: %s\n", info.desc, s);
 	}
 
 	const int capabilities = hdinfo[49];
-    snprintf(buffer, sizeof(buffer), "LBA supported: %s\n", (capabilities & 0x0200) ? "Yes" : "No");
-    lib_writex(buffer);
-    
+    printl("LBA supported: %s\n", (capabilities & 0x0200) ? "Yes" : "No");
+
 	const int cmd_set_supported = hdinfo[83];
-    snprintf(buffer, sizeof(buffer), "LBA48 supported: %s\n", (cmd_set_supported & 0x0400) ? "Yes" : "No");
-    lib_writex(buffer);
-	
+    printl("LBA48 supported: %s\n", (cmd_set_supported & 0x0400) ? "Yes" : "No");
+
 	const int sectors = ((int)hdinfo[61] << 16) + hdinfo[60];
-    snprintf(buffer, sizeof(buffer), "HD size: %dMB\n", sectors * 512 / 1000000);
-    lib_writex(buffer);
+    printl("HD size: %dMB\n", sectors * 512 / 1000000);
 }
 
 static void harddisk_command_out(harddisk_command_t* cmd)

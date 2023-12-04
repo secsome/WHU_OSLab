@@ -75,7 +75,7 @@ void TestA()
 {
     while (true)
     {
-		printf("<Ticks:%08X>\n", get_ticks());
+		// printf("<Ticks:%08X>\n", get_ticks());
 		usleep(20000);
     }
 }

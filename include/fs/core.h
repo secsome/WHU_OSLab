@@ -42,6 +42,34 @@ typedef struct inode_t
     int index;
 } inode_t;
 
+// imodes : octal, lower 12 bits reserved
+enum
+{
+    FS_INODE_TYPE_MASK = 0170000,
+    FS_INODE_REGULAR = 0100000,
+    FS_INODE_BLOCK_SPECIAL = 0060000,
+    FS_INODE_DIRECTORY = 0040000,
+    FS_INODE_CHAR_SPECIAL = 0020000,
+    FS_INODE_NAMED_PIPE = 0010000
+};
+#define FS_INODE_MODE(mode) ((mode) & FS_INODE_TYPE_MASK)+
+#define FS_INODE_IS_TYPE(mode, type) (((mode) & FS_INODE_TYPE_MASK) == (type))
+#define FS_INODE_IS_SPECIAL(mode) (FS_INODE_IS_TYPE(mode, FS_INODE_BLOCK_SPECIAL) || FS_INODE_IS_TYPE(mode, FS_INODE_CHAR_SPECIAL))
+
+enum
+{
+    FS_MAX_FILENAME = 12,
+};
+typedef struct dir_entry_t
+{
+	int	inode_index;
+	char filename[FS_MAX_FILENAME];
+} dir_entry_t;
+enum
+{
+    FS_DIRENTRY_SIZE = sizeof(dir_entry_t),
+};
+
 typedef struct file_descriptor_t
 {
     int mode;
@@ -51,11 +79,13 @@ typedef struct file_descriptor_t
 
 enum
 {
+    FS_DEFAULT_FILE_SECTORS = 2048,
     FS_MAGIC_V1 = 0x111,
     FS_SUPER_BLOCK_MAGIC_V1 = 0x111,
     FS_SUPER_BLOCK_SIZE = 56, // Size on disk
     FS_INODE_SIZE = 32, // Size on disk
-
+    FS_INODE_INVALID = 0,
+    FS_INODE_ROOT = 1,
 };
 
 enum 
@@ -63,9 +93,9 @@ enum
     FS_INVALID_DRIVER = -1,
 };
 
-void read_sector();
-void write_sector();
-void readwrite_sector();
+void read_sector(int device, int sector, void* buffer);
+void write_sector(int device, int sector, const void* buffer);
+void readwrite_sector(int type, int device, u64 position, int bytes, int proccess_index, void* buffer);
 
 void task_fs();
 

@@ -46,6 +46,10 @@
     #define DBG_UNREFERENCED_LOCAL_VARIABLE(V) (V)
 #endif // DBG_UNREFERENCED_LOCAL_VARIABLE
 
+#ifndef offsetof
+    #define offsetof(TYPE, MEMBER) __builtin_offsetof(TYPE, MEMBER)
+#endif // offsetof
+
 /* GDT 和 IDT 中描述符的个数 */
 enum 
 {
