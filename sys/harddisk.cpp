@@ -11,10 +11,15 @@
 #include <lib/clock.h>
 #include <lib/string.h>
 
+#include <lib/algorithm>
+
 #include <fs/device.h>
 
 static void harddisk_init();
 static void harddisk_open(int device);
+static void harddisk_close(int device);
+static void harddisk_readwrite(const message_t& msg);
+static void harddisk_ioctl(const message_t& msg);
 static void harddisk_command_out(harddisk_command_t* cmd);
 static void harddisk_get_partition_table(int drive, int section_count, partition_entry_t* entry);
 static void harddisk_partition(int device, int style);
@@ -43,6 +48,16 @@ void task_harddisk()
         case SR_MSGTYPE_DEVOPEN:
             harddisk_open(msg.m_device.device);
             break;
+		case SR_MSGTYPE_DEVCLOSE:
+			harddisk_close(msg.m_device.device);
+			break;
+		case SR_MSGTYPE_DEVREAD:
+		case SR_MSGTYPE_DEVWRITE:
+			harddisk_readwrite(msg);
+			break;
+		case SR_MSGTYPE_IOCTL:
+			harddisk_ioctl(msg);
+			break;
         default:
             debug_dump_message("Harddisk driver::unknown msg", &msg);
             spin("FS::main_loop (invalid msg.type)");
@@ -85,6 +100,84 @@ static void harddisk_open(int device)
 		harddisk_partition(drive * (HD_NUM_PART_PER_DRIVE + 1), HD_PARTITION_STYLE_PRIMARY);
 		harddisk_print_harddisk_info(&info);
 	}
+}
+
+static void harddisk_close(int device)
+{
+	const int drive = GET_DEV_DRIVER(device);
+	assert(drive == 0);	// We have only one drive
+
+	--harddisk_info[drive].open_count;
+}
+
+static void harddisk_readwrite(const message_t& msg)
+{
+	const int drive = GET_DEV_DRIVER(msg.m_device.device);
+	const auto position = msg.m_device.position;
+	assert((position >> HD_SECTOR_SIZE_SHIFT) < (1u << 31));
+	
+	// We only allow to R/W from a SECTOR boundary
+	assert((position & 0x1FF) == 0);
+
+	size_t sector_count = static_cast<size_t>(position >> HD_SECTOR_SIZE_SHIFT);
+	const int logical_index = (msg.m_device.device - HD_MINOR_1A) % HD_NUM_SUB_PER_DRIVE;
+	sector_count += msg.m_device.device < HD_MAX_PRIM ?
+		harddisk_info[drive].primary[msg.m_device.device].base :
+		harddisk_info[drive].logical[logical_index].base;
+	
+	harddisk_command_t cmd;
+	cmd.features = 0;
+	cmd.sector_count = (msg.m_device.count + HD_SECTOR_SIZE - 1) / HD_SECTOR_SIZE;
+	cmd.lba_low = sector_count & 0xFF;
+	cmd.lba_mid = (sector_count >> 8) & 0xFF;
+	cmd.lba_high = (sector_count >> 16) & 0xFF;
+	cmd.device = MAKE_DEVICE_REG(1, drive, (sector_count >> 24) & 0xF);
+	cmd.command = msg.type == SR_MSGTYPE_DEVREAD ? HD_ATA_READ : HD_ATA_WRITE;
+	harddisk_command_out(&cmd);
+
+	int bytes_left = msg.m_device.count;
+	auto la = reinterpret_cast<char*>(va2la(msg.source, msg.m_device.buffer));
+
+	while (bytes_left)
+	{
+		int bytes = std::min(HD_SECTOR_SIZE, bytes_left);
+		if (msg.type == SR_MSGTYPE_DEVREAD)
+		{
+			harddisk_interrupt_wait();
+			port_read(HD_REG_DATA, harddisk_buffer, HD_SECTOR_SIZE);
+			memcpy(la, va2la(TASK_HARDDISK, harddisk_buffer), bytes);
+		}
+		else
+		{
+			if (!harddisk_waitfor(HD_STATUS_DRQ, HD_STATUS_DRQ, HD_TIMEOUT))
+				panic("harddisk writing error.");
+
+			port_write(HD_REG_DATA, la, bytes);
+			harddisk_interrupt_wait();
+		}
+		bytes_left -= HD_SECTOR_SIZE;
+		la += HD_SECTOR_SIZE;
+	}
+}
+
+static void harddisk_ioctl(const message_t& msg)
+{
+	const int device = msg.m_device.device;
+	const int drive = GET_DEV_DRIVER(device);
+
+	const auto& info = harddisk_info[drive];
+
+	if (msg.m_device.request == HD_IOCTL_GET_GEO) 
+	{
+		void* dst = va2la(msg.m_device.process_index, msg.m_device.buffer);
+		void* src = va2la(TASK_HARDDISK,
+			device < HD_MAX_PRIM ?
+			&info.primary[device] :
+			&info.logical[(device - HD_MINOR_1A) % HD_NUM_SUB_PER_DRIVE]);
+		memcpy(dst, src, sizeof(partition_info_t));
+	}
+	else
+		assert(false);
 }
 
 static void harddisk_get_partition_table(int drive, int section_count, partition_entry_t* entry)

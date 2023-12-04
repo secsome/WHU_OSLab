@@ -112,4 +112,9 @@ enum
 
 void task_harddisk();
 
+enum
+{
+    HD_IOCTL_GET_GEO
+};
+
 HEADER_CPP_END

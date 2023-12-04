@@ -1,0 +1,20 @@
+#pragma once
+
+#include <sys/const.h>
+
+#ifdef __cplusplus
+
+namespace std
+{
+    constexpr auto max(auto a, auto b)
+    {
+        return a > b ? a : b;
+    }
+
+    constexpr auto min(auto a, auto b)
+    {
+        return a < b ? a : b;
+    }
+}
+
+#endif

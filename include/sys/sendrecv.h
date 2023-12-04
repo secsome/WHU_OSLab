@@ -9,6 +9,14 @@ HEADER_CPP_BEGIN
 struct _message_device
 {
     int device;
+    union
+    {
+        int count;
+        int request;
+    };
+    int process_index;
+    u64 position;
+    void* buffer;
 };
 
 typedef struct message_t
@@ -41,6 +49,10 @@ enum
     SR_MSGTYPE_GET_TICKS = 2,
 
     SR_MSGTYPE_DEVOPEN = 1001,
+    SR_MSGTYPE_DEVCLOSE,
+    SR_MSGTYPE_DEVREAD,
+    SR_MSGTYPE_DEVWRITE,
+    SR_MSGTYPE_IOCTL,
 };
 
 u32 sendrecv_impl(u32 mode, u32 target, message_t* msg, process_t* process);
