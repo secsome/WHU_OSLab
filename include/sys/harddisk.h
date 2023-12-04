@@ -28,6 +28,16 @@ typedef struct partition_entry_t
 
 enum
 {
+    HD_PARTITION_STYLE_PRIMARY = 0,
+    HD_PARTITION_STYLE_EXTENDED = 1,
+
+    HD_PARTITION_TYPE_NONE = 0x00,
+    HD_PARTITION_TYPE_EXTENDED = 0x05,
+    HD_PARTITION_TYPE_MYOS = 0x99
+};
+
+enum
+{
     HD_REG_DATA = 0x1F0,
     HD_REG_FEATURES = 0x1F1,
     HD_REG_ERRORS = HD_REG_FEATURES,
@@ -77,7 +87,9 @@ enum
     HD_NUM_SUB_PER_DRIVE = HD_NUM_SUB_PER_PART * HD_NUM_PART_PER_DRIVE,
     HD_NUM_PRIM_PER_DRIVE = HD_NUM_PART_PER_DRIVE + 1,
     HD_MAX_PRIM = HD_MAX_DRIVES * HD_NUM_PRIM_PER_DRIVE - 1,
-    HD_MAX_SUBPARTITIONS = HD_NUM_SUB_PER_DRIVE * HD_MAX_DRIVES
+    HD_MAX_SUBPARTITIONS = HD_NUM_SUB_PER_DRIVE * HD_MAX_DRIVES,
+    HD_MINOR_1A = 0x10,
+    HD_MINOR_2A = HD_MINOR_1A + HD_NUM_SUB_PER_PART
 };
 
 typedef struct harddisk_info_t
@@ -94,8 +106,8 @@ enum
     HD_ATA_IDENTIFY = 0xEC,
     HD_ATA_READ = 0x20,
     HD_ATA_WRITE = 0x30,
-    
 };
+
 #define MAKE_DEVICE_REG(lba, drv, lba_highest) (((lba) << 6) | ((drv) << 4) | (lba_highest & 0xF) | 0xA0)
 
 void task_harddisk();

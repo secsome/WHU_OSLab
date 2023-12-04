@@ -13,7 +13,7 @@ void task_sys()
         switch (msg.type)
         {
         case SR_MSGTYPE_GET_TICKS:
-            msg.m3.m3i1 = sys_tick_count;
+            msg.m_int32 = sys_tick_count;
             sendrecv(SR_MODE_SEND, msg.source, &msg);
             break;
         default:

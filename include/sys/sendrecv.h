@@ -6,32 +6,9 @@
 
 HEADER_CPP_BEGIN
 
-struct _message_t1
+struct _message_device
 {
-    int m1i1;
-	int m1i2;
-	int m1i3;
-	int m1i4;
-};
-
-struct _message_t2
-{
-    int m1i1;
-	int m1i2;
-	int m1i3;
-	int m1i4;
-};
-
-struct _message_t3
-{
-    int	m3i1;
-	int	m3i2;
-	int	m3i3;
-	int	m3i4;
-	u64	m3l1;
-	u64	m3l2;
-	void* m3p1;
-	void* m3p2;
+    int device;
 };
 
 typedef struct message_t
@@ -40,9 +17,9 @@ typedef struct message_t
     int type;
     union
     {
-        struct _message_t1 m1;
-        struct _message_t2 m2;
-        struct _message_t3 m3;
+        char m_raw[1];
+        int m_int32;
+        struct _message_device m_device;
     };
 } message_t;
 

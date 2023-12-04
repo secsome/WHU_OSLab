@@ -58,6 +58,11 @@ enum
 
 };
 
+enum 
+{
+    FS_INVALID_DRIVER = -1,
+};
+
 void read_sector();
 void write_sector();
 void readwrite_sector();

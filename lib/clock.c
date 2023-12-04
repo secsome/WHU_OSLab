@@ -9,7 +9,7 @@ u32 get_ticks()
     message_t msg = { 0 };
     msg.type = SR_MSGTYPE_GET_TICKS;
     sendrecv(SR_MODE_BOTH, TASK_SYS, &msg);
-    return msg.m3.m3i1;
+    return msg.m_int32;
 }
 
 void usleep(int millisecond)

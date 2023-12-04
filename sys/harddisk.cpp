@@ -9,9 +9,16 @@
 #include <lib/syscall.h>
 #include <lib/asm.h>
 #include <lib/clock.h>
+#include <lib/string.h>
+
+#include <fs/device.h>
 
 static void harddisk_init();
+static void harddisk_open(int device);
 static void harddisk_command_out(harddisk_command_t* cmd);
+static void harddisk_get_partition_table(int drive, int section_count, partition_entry_t* entry);
+static void harddisk_partition(int device, int style);
+static void harddisk_print_harddisk_info(const harddisk_info_t* info);
 static bool harddisk_waitfor(int mask, int val, size_t timeout);
 static void harddisk_interrupt_wait();
 static void harddisk_identify(int drive);
@@ -20,6 +27,7 @@ static void harddisk_handler(int irq);
 
 static u8 harddisk_status;
 static u8 harddisk_buffer[HD_SECTOR_SIZE * 2];
+static harddisk_info_t harddisk_info[1];
 
 void task_harddisk()
 {
@@ -33,7 +41,7 @@ void task_harddisk()
         switch (msg.type) 
         {
         case SR_MSGTYPE_DEVOPEN:
-            harddisk_identify(0);
+            harddisk_open(msg.m_device.device);
             break;
         default:
             debug_dump_message("Harddisk driver::unknown msg", &msg);
@@ -58,6 +66,123 @@ static void harddisk_init()
     put_irq_handler(AT_WINI_IRQ, harddisk_handler);
     enable_irq(CASCADE_IRQ);
     enable_irq(AT_WINI_IRQ);
+
+	for (auto& info : harddisk_info)
+		memset(&info, 0, sizeof(info));
+	harddisk_info[0].open_count = 0;
+}
+
+static void harddisk_open(int device)
+{
+	const int drive = GET_DEV_DRIVER(device);
+	assert(drive == 0); // We have only one drive
+
+	harddisk_identify(drive);
+
+	auto& info = harddisk_info[drive];
+	if (info.open_count++ == 0)
+	{
+		harddisk_partition(drive * (HD_NUM_PART_PER_DRIVE + 1), HD_PARTITION_STYLE_PRIMARY);
+		harddisk_print_harddisk_info(&info);
+	}
+}
+
+static void harddisk_get_partition_table(int drive, int section_count, partition_entry_t* entry)
+{
+	harddisk_command_t cmd;
+	cmd.features = 0;
+	cmd.sector_count = 1;
+	cmd.lba_low = section_count & 0xFF;
+	cmd.lba_mid = (section_count >> 8) & 0xFF;
+	cmd.lba_high = (section_count >> 16) & 0xFF;
+	cmd.device = MAKE_DEVICE_REG(1, drive, (section_count >> 24) & 0xF);
+	cmd.command = HD_ATA_READ;
+	harddisk_command_out(&cmd);
+	harddisk_interrupt_wait();
+
+	port_read(HD_REG_DATA, harddisk_buffer, HD_SECTOR_SIZE);
+	memcpy(entry, harddisk_buffer + HD_PARTITION_TABLE_OFFSET, sizeof(partition_entry_t) * HD_NUM_PART_PER_DRIVE);
+}
+
+static void harddisk_partition(int device, int style)
+{
+	const int drive = GET_DEV_DRIVER(device);
+	auto& info = harddisk_info[drive];
+	partition_entry_t partition_table[HD_NUM_SUB_PER_DRIVE];
+
+	if (style == HD_PARTITION_STYLE_PRIMARY)
+	{
+		harddisk_get_partition_table(drive, drive, partition_table);
+		int primary_part_count = 0;
+		for (int i = 0; i < HD_NUM_PART_PER_DRIVE; ++i)
+		{
+			if(partition_table[i].system_id == HD_PARTITION_TYPE_NONE)
+				continue;
+			
+			++primary_part_count;
+			const int device_index = i + 1;
+			info.primary[device_index].base = partition_table[i].starting_sector32;
+			info.primary[device_index].size = partition_table[i].number_of_sectors32;
+
+			if (partition_table[i].system_id == HD_PARTITION_TYPE_EXTENDED)
+				harddisk_partition(device + device_index, HD_PARTITION_STYLE_EXTENDED);
+		}
+		assert(primary_part_count != 0);
+	}
+	else if (style == HD_PARTITION_STYLE_EXTENDED)
+	{
+		const int primary_index = device % HD_NUM_PRIM_PER_DRIVE;
+		const int start_sector = info.primary[primary_index].base;
+		int base_sector = start_sector;
+		int first_sub_index = (primary_index - 1) * HD_NUM_SUB_PER_PART; /* 0/16/32/48 */
+
+		for (int i = 0; i < HD_NUM_SUB_PER_PART; ++i)
+		{
+			harddisk_get_partition_table(drive, base_sector, partition_table);
+
+			const int device_index = first_sub_index + i;
+			info.logical[device_index].base = base_sector + partition_table[0].starting_sector32;
+			info.logical[device_index].size = partition_table[0].number_of_sectors32;
+
+			base_sector = start_sector + partition_table[1].starting_sector32;
+
+			// No more logical partitions in this extended partition
+			if (partition_table[1].system_id == HD_PARTITION_TYPE_NONE)
+				break;
+		}
+	}
+	else
+		assert(false);
+}
+
+static void harddisk_print_harddisk_info(const harddisk_info_t* info)
+{
+	char buffer[1024] = { 0 };
+	for (int i = 0; i < HD_NUM_PART_PER_DRIVE + 1; ++i)
+	{
+		snprintf(buffer, sizeof(buffer), "%sPART_%d: base %d(0x%x), size %d(0x%x) (in sector)\n",
+			i == 0 ? " " : "     ",
+			i,
+			info->primary[i].base,
+			info->primary[i].base,
+			info->primary[i].size,
+			info->primary[i].size);
+		lib_writex(buffer);
+	}
+	
+	for (int i = 0; i < HD_NUM_SUB_PER_DRIVE; ++i)
+	{
+		if (info->logical[i].size == 0)
+			continue;
+		snprintf(buffer, sizeof(buffer), "         "
+			"%d: base %d(0x%x), size %d(0x%x) (in sector)\n",
+			i,
+			info->logical[i].base,
+			info->logical[i].base,
+			info->logical[i].size,
+			info->logical[i].size);
+		lib_writex(buffer);
+	}
 }
 
 static void harddisk_identify(int drive)
