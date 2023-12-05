@@ -9,8 +9,9 @@ typedef struct console_t
 {
     u32 current_start_address; // where is current display starts
     u32 original_address; // where does this console's video memory starts
-    u32 memory_limit; // console video memory limit
+    u32 console_size; // how many words does the console have
     u32 cursor; // current cursor position
+    bool is_full; // is the console full
 } console_t;
 
 enum

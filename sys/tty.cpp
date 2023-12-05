@@ -6,6 +6,7 @@
 #include <sys/debug.h>
 
 #include <lib/display.h>
+#include <lib/printf.h>
 #include <lib/asm.h>
 #include <lib/assert.h>
 #include <lib/string.h>
@@ -135,11 +136,12 @@ void tty_init_screen(tty_t* tty)
 {
     const int tty_index = tty - ttys_table;
     tty->console = consoles_table + tty_index;
-	const u32 video_memory_size = V_MEM_SIZE / 2; // Video memory size in WORD
 
+    // variables related to `position' and `size' below are in WORDS instead of BYTES
+	const u32 video_memory_size = V_MEM_SIZE / 2;
     const u32 video_memory_size_per_console = video_memory_size / NUM_CONSOLES;
 	tty->console->original_address = tty_index * video_memory_size_per_console;
-	tty->console->memory_limit = video_memory_size_per_console;
+	tty->console->console_size = video_memory_size_per_console / CONSOLE_SCREEN_WIDTH * CONSOLE_SCREEN_WIDTH;
 	tty->console->current_start_address = tty->console->original_address;
 	tty->console->cursor = tty->console->original_address;
 
@@ -151,9 +153,10 @@ void tty_init_screen(tty_t* tty)
 	}
 	else
     {
-        console_put_char(tty->console, '#');
-		console_put_char(tty->console, tty_index + '0');
-        console_put_char(tty->console, '\n');
+        char buffer[16] = { 0 };
+        snprintf(buffer, sizeof(buffer), "[TTY #%d]\n", tty_index);
+        for (char* p = buffer; *p; ++p)
+            console_put_char(tty->console, *p);
 	}
 
     console_flush(tty->console);
