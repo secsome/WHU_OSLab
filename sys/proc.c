@@ -105,6 +105,26 @@ void TestA()
 	// Close file
 	assert(close(fd) == 0);
 
+	// Create files
+	const char* filenames[] = { "/foo", "/bar", "/baz" };
+	for (int i = 0; i < sizeof(filenames) / sizeof(filenames[0]); ++i)
+	{
+		fd = open(filenames[i], O_CREAT | O_RDWR);
+		assert(fd != -1);
+		printf("File created: %s (fd %d)\n", filenames[i], fd);
+		close(fd);
+	}
+
+	// Remove files
+	const char* rfilenames[] = { "/bar", "/foo", "/baz", "/dev_tty0" };
+	for (int i = 0; i < sizeof(rfilenames) / sizeof(rfilenames[0]); ++i)
+	{
+		if (unlink(rfilenames[i]) == 0)
+			printf("File removed: %s\n", rfilenames[i]);
+		else
+			printf("Failed to remove file: %s\n", rfilenames[i]);
+	}
+
 	spin(__FUNCTION__);
 }
 

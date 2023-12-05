@@ -33,6 +33,31 @@ struct _message_readwrite
     size_t count;
 };
 
+struct _message_unlink
+{
+    const char* path;
+    size_t path_length;
+};
+
+struct _message_lseek
+{
+    int fd;
+    off_t offset;
+    int whence;
+};
+
+struct _message_stat
+{
+    const char* path;
+    size_t path_length;
+};
+
+struct _message_string
+{
+    const char* str;
+    size_t length;
+};
+
 typedef struct message_t
 {
     int source;
@@ -41,9 +66,11 @@ typedef struct message_t
     {
         char m_raw[1];
         int m_int32;
+        struct _message_string m_string;
         struct _message_device m_device;
         struct _message_open m_open;
         struct _message_readwrite m_readwrite;
+        struct _message_lseek m_lseek;
     };
 } message_t;
 

@@ -257,6 +257,227 @@ int fs_do_readwrite(const message_t& msg)
 	}
 }
 
+int unlink(const char* pathname)
+{
+    message_t msg;
+    msg.type = SR_MSGTYPE_UNLINK;
+    msg.m_string.str = pathname;
+    msg.m_string.length = strlen(pathname);
+
+    sendrecv(SR_MODE_BOTH, TASK_FILESYSTEM, &msg);
+    assert(msg.type == SR_MSGTYPE_SYSCALL_RET);
+    return msg.m_int32;
+}
+
+int fs_do_unlink(const message_t& msg)
+{
+    char pathname[MAX_PATH];
+
+	// get parameters from the message
+	const auto length = msg.m_string.length; // length of filename
+	assert(length < MAX_PATH);
+
+    memcpy(pathname, va2la(msg.source, msg.m_string.str), length);
+	pathname[length] = 0;
+
+	if (!strcmp(pathname , "/"))
+    {
+		printl("FS:do_unlink():: cannot unlink the root\n");
+		return -1;
+	}
+
+	const int inode_index = fs_search_file(pathname);
+	if (inode_index == FS_INODE_INVALID)
+    {
+		printl("FS::do_unlink():: search_file() returns invalid inode: %s\n", pathname);
+		return -1;
+	}
+
+	char filename[MAX_PATH];
+	inode_t* dir_node;
+	if (fs_strip_path(filename, pathname, &dir_node) != 0)
+		return -1;
+
+	inode_t* node = fs_get_inode(dir_node->device, inode_index);
+
+	if (node->mode != FS_INODE_REGULAR) // can only remove regular files
+    {
+		printl("cannot remove file %s, because it is not a regular file.\n", pathname);
+		return -1;
+	}
+
+	if (node->ref_count > 1) // the file was opened
+    {
+		printl("cannot remove file %s, because node->ref_cnt is %d.\n", pathname, node->ref_count);
+		return -1;
+	}
+
+    const auto sb = fs_get_super_block(node->device);
+    // free the bit in imap
+    {
+        const int byte_idx = inode_index / 8;
+        const int bit_idx = inode_index % 8;
+	    assert(byte_idx < HD_SECTOR_SIZE);	// we have only one i-map sector
+
+	    // read sector 2 (skip bootsect and superblk):
+	    fs_read_sector(node->device, 2, fs_buffer);
+	    assert(fs_buffer[byte_idx % HD_SECTOR_SIZE] & (1 << bit_idx));
+	    fs_buffer[byte_idx % HD_SECTOR_SIZE] &= ~(1 << bit_idx);
+	    fs_write_sector(node->device, 2, fs_buffer);
+    }
+
+	// free the bits in s-map
+    {
+        const int bit_idx = node->start_sector - sb->num_first_sector + 1;
+        const int byte_idx = bit_idx / 8;
+        int bits_left = node->num_sectors;
+        const int byte_cnt = (bits_left - (8 - (bit_idx % 8))) / 8;
+
+        // current sector index
+        int current_sector = 2 + sb->num_imap_sectors + byte_idx / HD_SECTOR_SIZE;
+        fs_read_sector(node->device, current_sector, fs_buffer);
+        // clear the first byte
+        for (int i = bit_idx % 8; (i < 8) && bits_left; ++i, --bits_left)
+        {
+            assert((fs_buffer[byte_idx % HD_SECTOR_SIZE] >> i & 1) == 1);
+            fs_buffer[byte_idx % HD_SECTOR_SIZE] &= ~(1 << i);
+        }
+
+        // clear bytes from the second byte to the second to last
+        int i = (byte_idx % HD_SECTOR_SIZE) + 1;
+        for (int k = 0; k < byte_cnt; ++k, ++i, bits_left -= 8)
+        {
+            if (i == HD_SECTOR_SIZE)
+            {
+                i = 0;
+                fs_write_sector(node->device, current_sector, fs_buffer);
+                fs_read_sector(node->device, ++current_sector, fs_buffer);
+            }
+            assert(fs_buffer[i] == 0xFF);
+            fs_buffer[i] = 0;
+        }
+
+        // clear the last byte
+        if (i == HD_SECTOR_SIZE)
+        {
+            i = 0;
+            fs_write_sector(node->device, current_sector, fs_buffer);
+            fs_read_sector(node->device, ++current_sector, fs_buffer);
+        }
+
+        unsigned char mask = ~((unsigned char)(~0) << bits_left);
+        assert((fs_buffer[i] & mask) == mask);
+        fs_buffer[i] &= (~0) << bits_left;
+        fs_write_sector(node->device, current_sector, fs_buffer);
+    }
+
+    // clear the inode itself
+    {
+        node->mode = 0;
+        node->size = 0;
+        node->start_sector = 0;
+        node->num_sectors = 0;
+        fs_write_inode(node);
+        // release slot in inode_table
+        fs_put_inode(node);
+    }
+
+    // set the inode_index to 0 in the directory entry
+    {
+        const int dir_block0_index = dir_node->start_sector;
+        const int dir_blocks_count = (dir_node->size + HD_SECTOR_SIZE - 1) / HD_SECTOR_SIZE;
+        const int dir_entries_count = dir_node->size / FS_DIRENTRY_SIZE;
+
+        int m = 0;
+        dir_entry_t* pde = nullptr;
+        bool flag = false;
+        int dir_size = 0;
+
+        for (int i = 0; i < dir_blocks_count; ++i)
+        {
+            fs_read_sector(dir_node->device, dir_block0_index + i, fs_buffer);
+            pde = reinterpret_cast<dir_entry_t*>(fs_buffer);
+            for (int j = 0; j < FS_DIRENTRY_PER_SECTOR; ++j, ++pde)
+            {
+                if (++m > dir_entries_count)
+                    break;
+                
+                if (pde->inode_index == inode_index)
+                {
+                    memset(pde, 0, FS_DIRENTRY_SIZE);
+                    fs_write_sector(dir_node->device, dir_block0_index + i, fs_buffer);
+                    flag = true;
+                    break;
+                }
+
+                if (pde->inode_index != FS_INODE_INVALID)
+                    dir_size += FS_DIRENTRY_SIZE;
+            }
+
+            if (m > dir_entries_count || flag) // all entries have been iterated OR file is found
+                break;
+        }
+
+        assert(flag);
+
+        if (m == dir_entries_count) // the file is the last one in the dir
+        {
+            dir_node->size = dir_size;
+            fs_write_inode(dir_node);
+        }
+    }
+
+	return 0;
+}
+
+off_t lseek(int fd, off_t offset, int whence)
+{
+    message_t msg;
+    msg.type = SR_MSGTYPE_LSEEK;
+    msg.m_lseek.fd = fd;
+    msg.m_lseek.offset = offset;
+    msg.m_lseek.whence = whence;
+
+    sendrecv(SR_MODE_BOTH, TASK_FILESYSTEM, &msg);
+    assert(msg.type == SR_MSGTYPE_SYSCALL_RET);
+    return msg.m_int32;
+}
+
+int fs_do_lseek(const message_t& msg)
+{
+    panic("%s is not implemented yet.", __FUNCTION__);
+    return -1;
+}
+
+int stat(const char* pathname)
+{
+    message_t msg;
+    msg.type = SR_MSGTYPE_STAT;
+    msg.m_string.str = pathname;
+    msg.m_string.length = strlen(pathname);
+
+    sendrecv(SR_MODE_BOTH, TASK_FILESYSTEM, &msg);
+    assert(msg.type == SR_MSGTYPE_SYSCALL_RET);
+    return msg.m_int32;
+}
+
+int fs_do_stat(const message_t& msg)
+{
+    panic("%s is not implemented yet.", __FUNCTION__);
+    return -1;
+}
+
+int creat(const char* pathname)
+{
+    return open(pathname, O_CREAT);
+}
+
+int remove(const char* pathname)
+{
+    // Not implemented for directories
+    return unlink(pathname);
+}
+
 static inode_t* fd_create_file(const char* path, int flags)
 {
     char filename[MAX_PATH];

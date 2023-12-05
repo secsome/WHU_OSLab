@@ -54,7 +54,7 @@ super_block_t* fs_get_super_block(int device)
 
 inode_t* fs_get_inode(int device, int inode)
 {
-    if (inode == 0)
+    if (inode == FS_INODE_INVALID)
         return nullptr;
     
     inode_t* q = nullptr;

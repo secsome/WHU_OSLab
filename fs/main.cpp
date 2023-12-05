@@ -18,6 +18,9 @@ u8* fs_buffer = reinterpret_cast<u8*>(0x600000u);
 extern int fs_do_open(const message_t& msg);
 extern int fs_do_close(const message_t& msg);
 extern int fs_do_readwrite(const message_t& msg);
+extern int fs_do_unlink(const message_t& msg);
+extern int fs_do_lseek(const message_t& msg);
+extern int fs_do_stat(const message_t& msg);
 
 void task_fs()
 {
@@ -43,6 +46,18 @@ void task_fs()
         case SR_MSGTYPE_READ:
         case SR_MSGTYPE_WRITE:
             msg.m_int32 = fs_do_readwrite(msg);
+            break;
+
+        case SR_MSGTYPE_UNLINK:
+            msg.m_int32 = fs_do_unlink(msg);
+            break;
+
+        case SR_MSGTYPE_LSEEK:
+            msg.m_int32 = fs_do_lseek(msg);
+            break;
+
+        case SR_MSGTYPE_STAT:
+            msg.m_int32 = fs_do_stat(msg);
             break;
 
         default:
