@@ -49,7 +49,6 @@ typedef struct process_t
     bool has_int_msg;
     struct process_t* sending;
     struct process_t* next_sending;
-    int tty_index;
     file_descriptor_t* fd_table[FS_NUM_FILES];
     
 } process_t;
@@ -76,6 +75,7 @@ void process_block(process_t* proc);
 void process_unblock(process_t* proc);
 bool process_check_deadlock(int src, int dst);
 void process_inform_interrupt(int target);
+void process_init_io();
 
 enum
 {

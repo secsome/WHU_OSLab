@@ -17,7 +17,7 @@ u8* fs_buffer = reinterpret_cast<u8*>(0x600000u);
 
 extern int fs_do_open(const message_t& msg);
 extern int fs_do_close(const message_t& msg);
-extern int fs_do_readwrite(const message_t& msg);
+extern int fs_do_readwrite(const message_t& msg, bool& suspend);
 extern int fs_do_unlink(const message_t& msg);
 extern int fs_do_lseek(const message_t& msg);
 extern int fs_do_stat(const message_t& msg);
@@ -31,7 +31,8 @@ void task_fs()
     {
         message_t msg;
         sendrecv(SR_MODE_RECEIVE, SR_TARGET_ANY, &msg);
-        const u32 target = msg.source;
+        u32 target = msg.source;
+        bool suspend = false;
 
         switch (msg.type)
         {
@@ -45,7 +46,7 @@ void task_fs()
         
         case SR_MSGTYPE_READ:
         case SR_MSGTYPE_WRITE:
-            msg.m_int32 = fs_do_readwrite(msg);
+            msg.m_int32 = fs_do_readwrite(msg, suspend);
             break;
 
         case SR_MSGTYPE_UNLINK:
@@ -60,14 +61,21 @@ void task_fs()
             msg.m_int32 = fs_do_stat(msg);
             break;
 
+        case SR_MSGTYPE_RESUME_PROC:
+            target = msg.m_proc.process_index;
+            break;
+
         default:
             debug_dump_message("FS::unknown message:", &msg);
             assert(0);
             break;
         }
 
-        msg.type = SR_MSGTYPE_SYSCALL_RET;
-        sendrecv(SR_MODE_SEND, target, &msg);
+        if (!suspend)
+        {
+            msg.type = SR_MSGTYPE_SYSCALL_RET;
+            sendrecv(SR_MODE_SEND, target, &msg);
+        }
     }
 };
 

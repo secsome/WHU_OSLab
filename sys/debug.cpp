@@ -31,10 +31,10 @@ void debug_dump_process(const struct process_t* process)
     snprintf(buffer, sizeof(buffer),
         "\n\nANY: 0x%02X, NO_TASK: 0x%02X.\n\n"
         "ldt_selector: 0x%04X, ticks: 0x%08X, priority: 0x%08X, pid: 0x%08X, process_name: %s.\n"
-        "process_flags: 0x%08X, recvfrom: 0x%08X, sendto: 0x%08X, tty_index: 0x%08X, has_int_msg: 0x%08X.\n",
+        "process_flags: 0x%08X, recvfrom: 0x%08X, sendto: 0x%08X, has_int_msg: 0x%08X.\n",
         SR_TARGET_ANY, SR_TARGET_NONE,
         process->ldt_selector, process->ticks, process->priority, process->pid, process->process_name,
-        process->process_flags, process->recvfrom, process->sendto, process->tty_index, process->has_int_msg);
+        process->process_flags, process->recvfrom, process->sendto, process->has_int_msg);
     disp_color_str(buffer, text_color);
 }
 

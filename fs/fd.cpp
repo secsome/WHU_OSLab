@@ -172,7 +172,7 @@ int write(int fd, const void* buf, size_t count)
     return msg.m_int32;
 }
 
-int fs_do_readwrite(const message_t& msg)
+int fs_do_readwrite(const message_t& msg, bool& suspend)
 {
     const int fd = msg.m_readwrite.fd;
     void* buf =  msg.m_readwrite.buffer;
@@ -204,8 +204,10 @@ int fs_do_readwrite(const message_t& msg)
         driver_msg.m_device.process_index = msg.source;
         assert(device_driver_map[MAJOR_DEV(device)] != FS_INVALID_DRIVER);
         sendrecv(SR_MODE_BOTH, device_driver_map[MAJOR_DEV(device)], &driver_msg);
-        assert(driver_msg.m_int32 == static_cast<int>(count));
-        return driver_msg.m_int32;
+        assert(driver_msg.m_proc.count == static_cast<int>(count));
+        if (driver_msg.type == SR_MSGTYPE_SUSPEND_PROC)
+            suspend = true;
+        return driver_msg.m_proc.count;
 	}
 	else
     {

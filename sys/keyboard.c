@@ -163,6 +163,7 @@ void init_keyboard()
     keyboard_in.head = keyboard_in.tail = keyboard_in.buffer;
 }
 
+extern bool tty_key_pressed;
 void keyboard_handler(int irq)
 {
     u8 scan_code = in_byte(KEYBOARD_PORT_DATA);
@@ -174,6 +175,8 @@ void keyboard_handler(int irq)
             keyboard_in.head = keyboard_in.buffer;
         ++keyboard_in.count;
     }
+
+	tty_key_pressed = true;
 }
 
 void keyboard_read(tty_t* tty)

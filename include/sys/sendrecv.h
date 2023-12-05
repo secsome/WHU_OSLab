@@ -58,6 +58,12 @@ struct _message_string
     size_t length;
 };
 
+struct _message_proc
+{
+    int count;
+    int process_index;
+};
+
 typedef struct message_t
 {
     int source;
@@ -71,6 +77,7 @@ typedef struct message_t
         struct _message_open m_open;
         struct _message_readwrite m_readwrite;
         struct _message_lseek m_lseek;
+        struct _message_proc m_proc;
     };
 } message_t;
 
@@ -98,6 +105,9 @@ enum
     SR_MSGTYPE_LSEEK,
     SR_MSGTYPE_STAT,
     SR_MSGTYPE_UNLINK,
+
+    SR_MSGTYPE_SUSPEND_PROC,
+    SR_MSGTYPE_RESUME_PROC,
 
     SR_MSGTYPE_SYSCALL_RET,
 

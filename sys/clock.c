@@ -12,6 +12,7 @@ void init_clock()
 	enable_irq(CLOCK_IRQ);
 }
 
+extern bool tty_key_pressed;
 u32 sys_tick_count = 0;
 void clock_handler(int irq)
 {
@@ -22,6 +23,9 @@ void clock_handler(int irq)
         --p_proc_ready->ticks;
         return;
     }
+
+    if (tty_key_pressed)
+        process_inform_interrupt(TASK_TTY);
 
     if (k_reenter != 0)
         return;

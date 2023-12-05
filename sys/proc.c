@@ -74,89 +74,44 @@ task_t user_proc_table[NUM_PROCS] =
 
 void TestA()
 {
-	const char* filename = "/blah";
-	char write_buffer[64] = "Hello world!";
-	char read_buffer[64];
-
-	// Create file
-    int fd = open(filename, O_CREAT | O_RDWR);
-	assert(fd != -1);
-	printf("File created: %s (fd: %d)\n", filename, fd);
-
-	// Write file
-	int n = write(fd, write_buffer, strlen(write_buffer));
-	assert(n == strlen(write_buffer));
-	printf("%d bytes written: %s\n", n, write_buffer);
-
-	// Close file
-	assert(close(fd) == 0);
-
-	// Open file
-	fd = open(filename, O_RDWR);
-	assert(fd != -1);
-	printf("File opened: %s (fd: %d)\n", filename, fd);
-
-	// Read file
-	n = read(fd, read_buffer, strlen(write_buffer));
-	assert(n == strlen(write_buffer));
-	read_buffer[n] = '\0';
-	printf("%d bytes read: %s\n", n, read_buffer);
-
-	// Close file
-	assert(close(fd) == 0);
-
-	// Create files
-	const char* filenames[] = { "/foo", "/bar", "/baz" };
-	for (int i = 0; i < sizeof(filenames) / sizeof(filenames[0]); ++i)
-	{
-		fd = open(filenames[i], O_CREAT | O_RDWR);
-		assert(fd != -1);
-		printf("File created: %s (fd %d)\n", filenames[i], fd);
-		close(fd);
-	}
-
-	// Remove files
-	const char* rfilenames[] = { "/bar", "/foo", "/baz", "/dev_tty0" };
-	for (int i = 0; i < sizeof(rfilenames) / sizeof(rfilenames[0]); ++i)
-	{
-		if (unlink(rfilenames[i]) == 0)
-			printf("File removed: %s\n", rfilenames[i]);
-		else
-			printf("Failed to remove file: %s\n", rfilenames[i]);
-	}
-
-	// Seek file
-	fd = open(filename, O_RDWR);
-	assert(fd != -1);
-	printf("File opened: %s (fd: %d)\n", filename, fd);
-	off_t filesize = lseek(fd, 0, SEEK_END);
-	printf("File size: %d\n", filesize);
-	assert(lseek(fd, 0, SEEK_SET) == 0);
-	n = read(fd, read_buffer, filesize);
-	assert(n == filesize);
-	read_buffer[n] = '\0';
-	printf("%d bytes read: %s\n", n, read_buffer);
-	assert(close(fd) == 0);
-
-	spin(__FUNCTION__);
+	for (;;)
+		;
 }
 
 void TestB()
-{
-    while (true)
-    {
-		printf("B");
-        usleep(20000);
-    }
+{	
+    char tty_name[] = "/dev_tty1";
+	int fd_stdin = open(tty_name, O_RDWR);
+	assert(fd_stdin == 0);
+	int fd_stdout = open(tty_name, O_RDWR);
+	assert(fd_stdout == 1);
+
+	char rdbuf[128];
+	while (true)
+	{
+		write(fd_stdout, "$ ", 2);
+		int r = read(fd_stdin, rdbuf, 70);
+		rdbuf[r] = 0;
+
+		if (!strcmp(rdbuf, "hello")	)
+			write(fd_stdout, "hello world!\n", 13);
+		else
+		{
+			if (rdbuf[0])
+			{
+				write(fd_stdout, "{", 1);
+				write(fd_stdout, rdbuf, r);
+				write(fd_stdout, "}\n", 2);
+			}
+		}
+	}
+	assert(false); // never arrive here.
 }
 
 void TestC()
 {
-    while (true)
-    {
-		printf("C");
-        usleep(20000);
-    }
+    for (;;)
+		;
 }
 
 extern void restart();
@@ -205,7 +160,6 @@ int kernel_main()
 		proc->regs.eip = (u32)task->initial_eip;
 		proc->regs.esp = (u32)current_task_stack;
 		proc->regs.eflags = eflags;
-		proc->tty_index = 0;
 
 		proc->process_flags = 0;
 		proc->msg = NULL;
@@ -226,10 +180,6 @@ int kernel_main()
 		selector_ldt += 1 << 3;
 	}
 	
-	proc_table[NUM_TASKS + 0].tty_index = 0;
-	proc_table[NUM_TASKS + 1].tty_index = 1;
-	proc_table[NUM_TASKS + 2].tty_index = 1;
-
 	k_reenter = 0;
 	sys_tick_count = 0;
 
@@ -359,4 +309,11 @@ void process_inform_interrupt(int target)
 	}
 	else
 		proc->has_int_msg = true;
+}
+
+void process_init_io()
+{
+	assert(open("/dev_tty0", O_RDWR) == STDIN_FILENO);
+	assert(open("/dev_tty1", O_RDWR) == STDOUT_FILENO);
+	assert(open("/dev_tty2", O_RDWR) == STDERR_FILENO);
 }

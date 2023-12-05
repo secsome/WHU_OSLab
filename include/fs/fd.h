@@ -22,11 +22,18 @@ extern file_descriptor_t fs_file_descriptor_table[FS_NUM_FD];
 
 enum
 {
+    FS_FD_STDIN = 0,
+    FS_FD_STDOUT = 1,
+    FS_FD_STDERR = 2,
     FS_FDFLAGS_CREAT = 1,
     FS_FDFLAGS_RDWR = 2,
     FS_LSEEK_SET = 0,
     FS_LSEEK_CUR = 1,
     FS_LSEEK_END = 2,
+
+    STDIN_FILENO = FS_FD_STDIN,
+    STDOUT_FILENO = FS_FD_STDOUT,
+    STDERR_FILENO = FS_FD_STDERR,
 
     O_CREAT = FS_FDFLAGS_CREAT,
     O_RDWR = FS_FDFLAGS_RDWR,
