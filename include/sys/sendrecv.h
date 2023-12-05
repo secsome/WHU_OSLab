@@ -26,6 +26,13 @@ struct _message_open
     int flags;
 };
 
+struct _message_readwrite
+{
+    int fd;
+    void* buffer;
+    size_t count;
+};
+
 typedef struct message_t
 {
     int source;
@@ -36,6 +43,7 @@ typedef struct message_t
         int m_int32;
         struct _message_device m_device;
         struct _message_open m_open;
+        struct _message_readwrite m_readwrite;
     };
 } message_t;
 

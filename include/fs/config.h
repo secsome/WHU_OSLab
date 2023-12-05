@@ -7,6 +7,7 @@ HEADER_CPP_BEGIN
 
 enum
 {
+    FS_BUFFER_SIZE = 0x100000,
     FS_NUM_FILES = 64,
     FS_NUM_FD = 64, // FIXME
     FS_NUM_INODE = 64, // FIXME

@@ -14,10 +14,10 @@ static void mkfs();
 static void read_superblock(int device);
 
 u8* fs_buffer = reinterpret_cast<u8*>(0x600000u);
-constexpr size_t fs_buffer_size = 0x100000;
 
 extern int fs_do_open(const message_t& msg);
 extern int fs_do_close(const message_t& msg);
+extern int fs_do_readwrite(const message_t& msg);
 
 void task_fs()
 {
@@ -38,6 +38,11 @@ void task_fs()
         
         case SR_MSGTYPE_CLOSE:
             msg.m_int32 = fs_do_close(msg);
+            break;
+        
+        case SR_MSGTYPE_READ:
+        case SR_MSGTYPE_WRITE:
+            msg.m_int32 = fs_do_readwrite(msg);
             break;
 
         default:

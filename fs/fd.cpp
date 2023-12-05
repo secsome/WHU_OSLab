@@ -8,6 +8,7 @@
 #include <lib/assert.h>
 #include <lib/string.h>
 #include <lib/printf.h>
+#include <lib/algorithm>
 
 extern u8* fs_buffer;
 
@@ -143,6 +144,117 @@ int fs_do_close(const message_t& msg)
     fd->inode = 0;
     fd = nullptr;
     return 0;
+}
+
+int read(int fd, void* buf, size_t count)
+{
+    message_t msg;
+    msg.type = SR_MSGTYPE_READ;
+    msg.m_readwrite.fd = fd;
+    msg.m_readwrite.buffer = buf;
+    msg.m_readwrite.count = count;
+
+    sendrecv(SR_MODE_BOTH, TASK_FILESYSTEM, &msg);
+    assert(msg.type == SR_MSGTYPE_SYSCALL_RET);
+    return msg.m_int32;
+}
+
+int write(int fd, const void* buf, size_t count)
+{
+    message_t msg;
+    msg.type = SR_MSGTYPE_WRITE;
+    msg.m_readwrite.fd = fd;
+    msg.m_readwrite.buffer = const_cast<void*>(buf);
+    msg.m_readwrite.count = count;
+
+    sendrecv(SR_MODE_BOTH, TASK_FILESYSTEM, &msg);
+    assert(msg.type == SR_MSGTYPE_SYSCALL_RET);
+    return msg.m_int32;
+}
+
+int fs_do_readwrite(const message_t& msg)
+{
+    const int fd = msg.m_readwrite.fd;
+    void* buf =  msg.m_readwrite.buffer;
+    size_t count = msg.m_readwrite.count;
+    
+    auto& caller = proc_table[msg.source];
+    auto& pfd = caller.fd_table[fd];
+    assert(pfd >= &fs_file_descriptor_table[0] && pfd < &fs_file_descriptor_table[FS_NUM_FD]);
+
+    if (nullptr == pfd)
+        return 0;
+    if ((pfd->mode & FS_FDFLAGS_RDWR) == 0)
+        return 0;
+    
+    const int pos = pfd->position;
+    const auto node = pfd->inode;
+    const int imode = pfd->inode->mode & FS_INODE_TYPE_MASK;
+    assert(node >= &fs_inode_table[0] && node < &fs_inode_table[FS_NUM_INODE]);
+
+	if (imode == FS_INODE_CHAR_SPECIAL)
+    {
+        message_t driver_msg;
+		driver_msg.type = msg.type == SR_MSGTYPE_READ ? SR_MSGTYPE_DEVREAD : SR_MSGTYPE_DEVWRITE;
+        const int device =node->start_sector;
+		assert(MAJOR_DEV(device) == 4);
+        driver_msg.m_device.device = MINOR_DEV(device);
+        driver_msg.m_device.buffer = buf;
+        driver_msg.m_device.count = count;
+        driver_msg.m_device.process_index = msg.source;
+        assert(device_driver_map[MAJOR_DEV(device)] != FS_INVALID_DRIVER);
+        sendrecv(SR_MODE_BOTH, device_driver_map[MAJOR_DEV(device)], &driver_msg);
+        assert(driver_msg.m_int32 == static_cast<int>(count));
+        return driver_msg.m_int32;
+	}
+	else
+    {
+        assert(imode == FS_INODE_REGULAR || imode == FS_INODE_DIRECTORY);
+        assert(msg.type == SR_MSGTYPE_READ || msg.type == SR_MSGTYPE_WRITE);
+
+        size_t pos_end;
+        if (msg.type == SR_MSGTYPE_READ)
+            pos_end = std::min(pos + count, node->size);
+        else
+            pos_end = std::min(pos + count, node->num_sectors * HD_SECTOR_SIZE);
+        
+        int offset = pos % HD_SECTOR_SIZE;
+        const int sector_min = node->start_sector + (pos >> HD_SECTOR_SIZE_SHIFT);
+        const int sector_max = node->start_sector + (pos_end >> HD_SECTOR_SIZE_SHIFT);
+
+        const int chunk = std::min(sector_max - sector_min + 1, FS_BUFFER_SIZE >> HD_SECTOR_SIZE_SHIFT);
+
+        int bytes_done = 0;
+        int bytes_left = count;
+		
+		for (int i = sector_min; i <= sector_max; i += chunk)
+        {
+			// read/write this amount of bytes every time
+			const auto unit_size = std::min(bytes_left, chunk * HD_SECTOR_SIZE - offset);
+			fs_readwrite_sector(SR_MSGTYPE_DEVREAD, node->device, i * HD_SECTOR_SIZE, chunk * HD_SECTOR_SIZE, TASK_FILESYSTEM, fs_buffer);
+            if (msg.type == SR_MSGTYPE_READ)
+                memcpy(va2la(msg.source, reinterpret_cast<char*>(buf) + bytes_done), fs_buffer + offset, unit_size);
+            else
+            {
+                memcpy(fs_buffer + offset, va2la(msg.source, reinterpret_cast<char*>(buf) + bytes_done), unit_size);
+                fs_readwrite_sector(SR_MSGTYPE_DEVWRITE, node->device, i * HD_SECTOR_SIZE, chunk * HD_SECTOR_SIZE, TASK_FILESYSTEM, fs_buffer);
+            }
+
+			offset = 0;
+			bytes_done += unit_size;
+			pfd->position += unit_size;
+			bytes_left -= unit_size;
+		}
+
+		if (static_cast<u32>(pfd->position) > node->size)
+        {
+            node->size = pfd->position;
+            // write the updated i-node back to disk
+			fs_write_inode(node);
+		}
+
+		return bytes_done;
+	}
 }
 
 static inode_t* fd_create_file(const char* path, int flags)

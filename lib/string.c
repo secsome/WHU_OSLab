@@ -25,7 +25,7 @@ int memcmp(const void* s1, const void* s2, size_t n)
 {
 	u8 u1 = 0, u2 = 0;
 
-    for (size_t i = 0 ; i < n; s1++, s2++) 
+    for (size_t i = 0 ; i < n; ++s1, ++s2, ++i) 
     {
 	    u1 = *(u8*)s1;
 	    u2 = *(u8*)s2;
@@ -146,7 +146,7 @@ int strncmp(const char* s1, const char* s2, size_t n)
 {
     u8 u1 = 0, u2 = 0;
 
-    for (size_t i = 0 ; i < n; s1++, s2++) 
+    for (size_t i = 0 ; i < n; ++s1, ++s2, ++i) 
     {
 	    u1 = (u8)*s1;
 	    u2 = (u8)*s2;

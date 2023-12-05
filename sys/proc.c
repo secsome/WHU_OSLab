@@ -74,9 +74,37 @@ task_t user_proc_table[NUM_PROCS] =
 
 void TestA()
 {
-    int fd = open("/blah", O_CREAT);
-	printf("fd: %d\n", fd);
-	close(fd);
+	const char* filename = "/blah";
+	char write_buffer[64] = "Hello world!";
+	char read_buffer[64];
+
+	// Create file
+    int fd = open(filename, O_CREAT | O_RDWR);
+	assert(fd != -1);
+	printf("File created: %s (fd: %d)\n", filename, fd);
+
+	// Write file
+	int n = write(fd, write_buffer, strlen(write_buffer));
+	assert(n == strlen(write_buffer));
+	printf("%d bytes written: %s\n", n, write_buffer);
+
+	// Close file
+	assert(close(fd) == 0);
+
+	// Open file
+	fd = open(filename, O_RDWR);
+	assert(fd != -1);
+	printf("File opened: %s (fd: %d)\n", filename, fd);
+
+	// Read file
+	n = read(fd, read_buffer, strlen(write_buffer));
+	assert(n == strlen(write_buffer));
+	read_buffer[n] = '\0';
+	printf("%d bytes read: %s\n", n, read_buffer);
+
+	// Close file
+	assert(close(fd) == 0);
+
 	spin(__FUNCTION__);
 }
 
