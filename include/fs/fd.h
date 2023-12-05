@@ -24,9 +24,16 @@ enum
 {
     FS_FDFLAGS_CREAT = 1,
     FS_FDFLAGS_RDWR = 2,
+    FS_LSEEK_SET = 0,
+    FS_LSEEK_CUR = 1,
+    FS_LSEEK_END = 2,
 
     O_CREAT = FS_FDFLAGS_CREAT,
     O_RDWR = FS_FDFLAGS_RDWR,
+
+    SEEK_SET = FS_LSEEK_SET,
+    SEEK_CUR = FS_LSEEK_CUR,
+    SEEK_END = FS_LSEEK_END,
 };
 
 int open(const char* path, int flags);

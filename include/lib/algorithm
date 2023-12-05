@@ -15,6 +15,12 @@ namespace std
     {
         return a < b ? a : b;
     }
+
+    constexpr auto& clamp(auto& v, auto lo, auto hi)
+    {
+        v = v < lo ? lo : v > hi ? hi : v;
+        return v;
+    }
 }
 
 #endif

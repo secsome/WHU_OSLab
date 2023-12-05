@@ -445,8 +445,38 @@ off_t lseek(int fd, off_t offset, int whence)
 
 int fs_do_lseek(const message_t& msg)
 {
-    panic("%s is not implemented yet.", __FUNCTION__);
-    return -1;
+    const int fd = msg.m_lseek.fd;
+    const off_t off = msg.m_lseek.offset;
+    const int whence = msg.m_lseek.whence;
+
+    auto& pfd = proc_table[msg.source].fd_table[fd];
+    const auto size = pfd->inode->size;
+
+    switch (whence)
+    {
+    case FS_LSEEK_SET:
+        pfd->position = off;
+        if (pfd->position < 0)
+            pfd->position = 0;
+        break;
+        
+    case FS_LSEEK_CUR:
+        pfd->position += off;
+        if (pfd->position < 0)
+            pfd->position = 0;
+        break;
+    
+    case FS_LSEEK_END:
+        pfd->position = size + off;
+        if (pfd->position < 0)
+            pfd->position = 0;
+        break;
+    
+    default:
+        return -1;
+    }
+
+    return pfd->position;
 }
 
 int stat(const char* pathname)

@@ -125,6 +125,19 @@ void TestA()
 			printf("Failed to remove file: %s\n", rfilenames[i]);
 	}
 
+	// Seek file
+	fd = open(filename, O_RDWR);
+	assert(fd != -1);
+	printf("File opened: %s (fd: %d)\n", filename, fd);
+	off_t filesize = lseek(fd, 0, SEEK_END);
+	printf("File size: %d\n", filesize);
+	assert(lseek(fd, 0, SEEK_SET) == 0);
+	n = read(fd, read_buffer, filesize);
+	assert(n == filesize);
+	read_buffer[n] = '\0';
+	printf("%d bytes read: %s\n", n, read_buffer);
+	assert(close(fd) == 0);
+
 	spin(__FUNCTION__);
 }
 
