@@ -9,6 +9,8 @@ void* memcpy(void* p_dst, const void* p_src, size_t size);
 
 void* memset(void* s, int c, size_t n);
 
+int memcmp(const void* s1, const void* s2, size_t n);
+
 // STRING(3)
 
 // Copy a string from src to dest, returning a pointer to the end of the resulting string at dest.

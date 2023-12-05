@@ -1,5 +1,5 @@
 # It must have the same value with 'KernelEntryPointPhyAddr' in load.inc!
-ENTRYPOINT	= 0x400400
+ENTRYPOINT	= 0x400000
 
 # Offset of entry point in kernel file
 # It depends on ENTRYPOINT
@@ -27,7 +27,7 @@ OBJS		= 	sys/kernel.o sys/start.o sys/i8259.o sys/global.o sys/protect.o sys/pro
 				sys/systask.o sys/debug.o sys/harddisk.o \
 				lib/asm.o lib/string.o lib/strings.o lib/display.o lib/syscall.o lib/clock.o lib/crc.o lib/ctype.o \
 				lib/printf.o lib/stdlib.o lib/errno.o lib/puts.o lib/assert.o \
-				fs/main.o fs/device.o fs/core.o
+				fs/main.o fs/device.o fs/core.o fs/fd.o
 DASMOUTPUT	= kernel.bin.asm
 
 # All Phony Targets

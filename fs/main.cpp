@@ -3,6 +3,7 @@
 
 #include <sys/sendrecv.h>
 #include <sys/console.h>
+#include <sys/debug.h>
 
 #include <lib/printf.h>
 #include <lib/assert.h>
@@ -10,19 +11,57 @@
 
 static void init_fs();
 static void mkfs();
+static void read_superblock(int device);
 
-static u8* fs_buffer = reinterpret_cast<u8*>(0x600000u);
-static constexpr size_t fs_buffer_size = 0x100000;
+u8* fs_buffer = reinterpret_cast<u8*>(0x600000u);
+constexpr size_t fs_buffer_size = 0x100000;
+
+extern int fs_do_open(const message_t& msg);
+extern int fs_do_close(const message_t& msg);
 
 void task_fs()
 {
     printl("Task FS begins.\n");
     init_fs();
-    spin("FS");
+    
+    while (true)
+    {
+        message_t msg;
+        sendrecv(SR_MODE_RECEIVE, SR_TARGET_ANY, &msg);
+        const u32 target = msg.source;
+
+        switch (msg.type)
+        {
+        case SR_MSGTYPE_OPEN:
+            msg.m_int32 = fs_do_open(msg);
+            break;
+        
+        case SR_MSGTYPE_CLOSE:
+            msg.m_int32 = fs_do_close(msg);
+            break;
+
+        default:
+            debug_dump_message("FS::unknown message:", &msg);
+            assert(0);
+            break;
+        }
+
+        msg.type = SR_MSGTYPE_SYSCALL_RET;
+        sendrecv(SR_MODE_SEND, target, &msg);
+    }
 };
 
 static void init_fs()
 {
+    for (auto& fd : fs_file_descriptor_table)
+        memset(&fd, 0, sizeof(fd));
+    
+    for (auto& inode : fs_inode_table)
+        memset(&inode, 0, sizeof(inode));
+    
+    for (auto& sb : fs_superblocks)
+        sb.superblock_device = FS_DEV_NONE;
+
     // open the device: hard disk
     message_t msg;
     msg.type = SR_MSGTYPE_DEVOPEN;
@@ -32,6 +71,43 @@ static void init_fs()
     sendrecv(SR_MODE_BOTH, device, &msg);
 
 	mkfs();
+
+    // load super block of ROOT
+    read_superblock(FS_ROOT_DEVICE);
+
+    const auto sb = fs_get_super_block(FS_ROOT_DEVICE);
+    assert(sb->magic == FS_MAGIC_V1);
+
+    fs_inode_root = fs_get_inode(FS_ROOT_DEVICE, FS_INODE_ROOT);
+}
+
+static void read_superblock(int device)
+{
+    message_t msg;
+    msg.type = SR_MSGTYPE_DEVREAD;
+    msg.m_device.device = MINOR_DEV(device);
+    msg.m_device.position = 1 * HD_SECTOR_SIZE;
+    msg.m_device.buffer = fs_buffer;
+    msg.m_device.count = HD_SECTOR_SIZE;
+    msg.m_device.process_index = TASK_FILESYSTEM;
+    assert(device_driver_map[MAJOR_DEV(device)] != FS_INVALID_DRIVER);
+    sendrecv(SR_MODE_BOTH, device_driver_map[MAJOR_DEV(device)], &msg);
+
+    // find a free slot in super_block
+    int i;
+    for (i = 0; i < FS_NUM_SUPERBLOCK; ++i)
+    {
+        if (fs_superblocks[i].superblock_device == FS_DEV_NONE)
+            break;
+    }
+	if (i == FS_NUM_SUPERBLOCK)
+		panic("super_block slots used up");
+
+	assert(i == 0); // currently we use only the 1st slot
+
+	auto sb = reinterpret_cast<super_block_t*>(fs_buffer);
+	fs_superblocks[i] = *sb;
+	fs_superblocks[i].superblock_device = device;
 }
 
 static void mkfs()
@@ -76,7 +152,7 @@ static void mkfs()
 	memcpy(fs_buffer, &sb, FS_SUPER_BLOCK_SIZE);
 
 	/* write the super block */
-    write_sector(FS_ROOT_DEVICE, 1, fs_buffer);
+    fs_write_sector(FS_ROOT_DEVICE, 1, fs_buffer);
 
 	printl("devbase:0x%x00, sb:0x%x00, imap:0x%x00, smap:0x%x00\n"
 	       "        inodes:0x%x00, 1st_sector:0x%x00\n", 
@@ -93,7 +169,7 @@ static void mkfs()
 		fs_buffer[0] |= 1 << i;
     
     assert(fs_buffer[0] == 0x1F);
-    write_sector(FS_ROOT_DEVICE, 2, fs_buffer);
+    fs_write_sector(FS_ROOT_DEVICE, 2, fs_buffer);
 
     // Sector map
     memset(fs_buffer, 0, HD_SECTOR_SIZE);
@@ -103,12 +179,12 @@ static void mkfs()
     for (int i = 0; i < sector_index % 8; ++i)
         fs_buffer[sector_index / 8] |= 1 << i;
 
-    write_sector(FS_ROOT_DEVICE, 2 + sb.num_imap_sectors, fs_buffer);
+    fs_write_sector(FS_ROOT_DEVICE, 2 + sb.num_imap_sectors, fs_buffer);
 
 	// zeromemory the rest sector-map
 	memset(fs_buffer, 0, HD_SECTOR_SIZE);
 	for (size_t i = 1; i < sb.num_smap_sectors; ++i)
-        write_sector(FS_ROOT_DEVICE, 2 + sb.num_imap_sectors + i, fs_buffer);
+        fs_write_sector(FS_ROOT_DEVICE, 2 + sb.num_imap_sectors + i, fs_buffer);
     
     // inodes
     // root inode
@@ -128,7 +204,7 @@ static void mkfs()
         inode->start_sector = MAKE_DEV(FS_DEV_CHAR_TTY, i);
         inode->num_sectors = 0;
 	}
-    write_sector(FS_ROOT_DEVICE, 2 + sb.num_imap_sectors + sb.num_smap_sectors, fs_buffer);
+    fs_write_sector(FS_ROOT_DEVICE, 2 + sb.num_imap_sectors + sb.num_smap_sectors, fs_buffer);
 
     // '/'
 	memset(fs_buffer, 0, HD_SECTOR_SIZE);
@@ -142,5 +218,5 @@ static void mkfs()
 		dir->inode_index = i + 2; // dev_tty0's inode_index is 2
 		sprintf(dir->filename, "dev_tty%d", i);
 	}
-    write_sector(FS_ROOT_DEVICE, sb.num_first_sector, fs_buffer);
+    fs_write_sector(FS_ROOT_DEVICE, sb.num_first_sector, fs_buffer);
 }

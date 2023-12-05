@@ -4,6 +4,9 @@
 #include <sys/type.h>
 #include <sys/protect.h>
 
+#include <fs/core.h>
+#include <fs/fd.h>
+
 HEADER_CPP_BEGIN
 
 typedef struct stackframe_t
@@ -29,6 +32,7 @@ typedef struct stackframe_t
 } stackframe_t;
 
 struct message_t;
+
 typedef struct process_t
 {
     stackframe_t regs;
@@ -46,6 +50,8 @@ typedef struct process_t
     struct process_t* sending;
     struct process_t* next_sending;
     int tty_index;
+    file_descriptor_t* fd_table[FS_NUM_FILES];
+    
 } process_t;
 
 extern process_t* p_proc_ready;

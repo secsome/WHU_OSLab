@@ -16,6 +16,7 @@
 #include <lib/assert.h>
 
 #include <fs/core.h>
+#include <fs/fd.h>
 
 void TestA();
 void TestB();
@@ -73,11 +74,10 @@ task_t user_proc_table[NUM_PROCS] =
 
 void TestA()
 {
-    while (true)
-    {
-		// printf("<Ticks:%08X>\n", get_ticks());
-		usleep(20000);
-    }
+    int fd = open("/blah", O_CREAT);
+	printf("fd: %d\n", fd);
+	close(fd);
+	spin(__FUNCTION__);
 }
 
 void TestB()
@@ -153,6 +153,9 @@ int kernel_main()
 		proc->has_int_msg = false;
 		proc->sending = NULL;
 		proc->next_sending = NULL;
+
+		for (int j = 0; j < FS_NUM_FILES; ++j)
+			proc->fd_table[j] = NULL;
 
 		proc->ticks = proc->priority = priority;
 

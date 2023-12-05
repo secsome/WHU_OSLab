@@ -2,6 +2,9 @@
 
 #include <sys/const.h>
 #include <sys/type.h>
+#include <sys/harddisk.h>
+
+#include <fs/config.h>
 
 HEADER_CPP_BEGIN
 
@@ -27,6 +30,7 @@ typedef struct super_block_t
 	// The following item(s) are only present in memory
 	int	superblock_device; // the super block's home device
 } super_block_t;
+extern super_block_t fs_superblocks[FS_NUM_SUPERBLOCK];
 
 typedef struct inode_t
 {
@@ -41,6 +45,8 @@ typedef struct inode_t
     int ref_count; // how many procs share this inode
     int index;
 } inode_t;
+extern inode_t fs_inode_table[FS_NUM_INODE];
+extern inode_t* fs_inode_root;
 
 // imodes : octal, lower 12 bits reserved
 enum
@@ -68,14 +74,8 @@ typedef struct dir_entry_t
 enum
 {
     FS_DIRENTRY_SIZE = sizeof(dir_entry_t),
+    FS_DIRENTRY_PER_SECTOR = HD_SECTOR_SIZE / FS_DIRENTRY_SIZE,
 };
-
-typedef struct file_descriptor_t
-{
-    int mode;
-    int position;
-    inode_t* inode;
-} file_descriptor_t;
 
 enum
 {
@@ -84,6 +84,7 @@ enum
     FS_SUPER_BLOCK_MAGIC_V1 = 0x111,
     FS_SUPER_BLOCK_SIZE = 56, // Size on disk
     FS_INODE_SIZE = 32, // Size on disk
+    FS_INODE_PER_SECTOR = HD_SECTOR_SIZE / FS_INODE_SIZE,
     FS_INODE_INVALID = 0,
     FS_INODE_ROOT = 1,
 };
@@ -93,9 +94,16 @@ enum
     FS_INVALID_DRIVER = -1,
 };
 
-void read_sector(int device, int sector, void* buffer);
-void write_sector(int device, int sector, const void* buffer);
-void readwrite_sector(int type, int device, u64 position, int bytes, int proccess_index, void* buffer);
+void fs_read_sector(int device, int sector, void* buffer);
+void fs_write_sector(int device, int sector, const void* buffer);
+void fs_readwrite_sector(int type, int device, u64 position, int bytes, int proccess_index, void* buffer);
+
+super_block_t* fs_get_super_block(int device);
+inode_t* fs_get_inode(int device, int inode);
+void fs_write_inode(inode_t* node);
+void fs_put_inode(inode_t* node);
+int fs_search_file(const char* path);
+int fs_strip_path(char* filename, const char* filepath, inode_t** node);
 
 void task_fs();
 

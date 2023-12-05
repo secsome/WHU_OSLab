@@ -21,6 +21,20 @@ void* memset(void* s, int c, size_t n)
     return ptr;
 }
 
+int memcmp(const void* s1, const void* s2, size_t n)
+{
+	u8 u1 = 0, u2 = 0;
+
+    for (size_t i = 0 ; i < n; s1++, s2++) 
+    {
+	    u1 = *(u8*)s1;
+	    u2 = *(u8*)s2;
+	    if (u1 != u2)
+	        break;
+    }
+    return u1 - u2;
+}
+
 char* stpcpy(char* dest, const char* src)
 {
     char* pdst = (char*)dest;

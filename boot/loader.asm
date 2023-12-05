@@ -1,3 +1,11 @@
+
+; ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+;                               loader.asm
+; ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+;                                                     Forrest Yu, 2005
+; ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+
 org  0100h
 
 	jmp	LABEL_START		; Start
@@ -18,7 +26,10 @@ LABEL_DESC_VIDEO:		Descriptor	 0B8000h,               0ffffh, DA_DRW            
 
 GdtLen		equ	$ - LABEL_GDT
 GdtPtr		dw	GdtLen - 1				; 段界限
-		dd	BaseOfLoaderPhyAddr + LABEL_GDT		; 基地址
+		dd	LOADER_PHY_ADDR + LABEL_GDT		; 基地址 (让基地址八字节对齐将起到优化速度之效果，目前懒得改)
+; The GDT is not a segment itself; instead, it is a data structure in linear address space.
+; The base linear address and limit of the GDT must be loaded into the GDTR register. -- IA-32 Software Developer’s Manual, Vol.3A
+
 
 ; GDT 选择子 ----------------------------------------------------------------------------------
 SelectorFlatC		equ	LABEL_DESC_FLAT_C	- LABEL_GDT
@@ -67,15 +78,15 @@ LABEL_SEARCH_IN_ROOT_DIR_BEGIN:
 	cmp	word [wRootDirSizeForLoop], 0	; ┓
 	jz	LABEL_NO_KERNELBIN		; ┣ 判断根目录区是不是已经读完, 如果读完表示没有找到 KERNEL.BIN
 	dec	word [wRootDirSizeForLoop]	; ┛
-	mov	ax, BaseOfKernelFile
-	mov	es, ax			; es <- BaseOfKernelFile
-	mov	bx, OffsetOfKernelFile	; bx <- OffsetOfKernelFile	于是, es:bx = BaseOfKernelFile:OffsetOfKernelFile = BaseOfKernelFile * 10h + OffsetOfKernelFile
+	mov	ax, KERNEL_FILE_SEG
+	mov	es, ax			; es <- KERNEL_FILE_SEG
+	mov	bx, KERNEL_FILE_OFF	; bx <- KERNEL_FILE_OFF	于是, es:bx = KERNEL_FILE_SEG:KERNEL_FILE_OFF = KERNEL_FILE_SEG * 10h + KERNEL_FILE_OFF
 	mov	ax, [wSectorNo]		; ax <- Root Directory 中的某 Sector 号
 	mov	cl, 1
 	call	ReadSector
 
 	mov	si, KernelFileName	; ds:si -> "KERNEL  BIN"
-	mov	di, OffsetOfKernelFile	; es:di -> BaseOfKernelFile:???? = BaseOfKernelFile*10h+????
+	mov	di, KERNEL_FILE_OFF	; es:di -> KERNEL_FILE_SEG:???? = KERNEL_FILE_SEG*10h+????
 	cld
 	mov	dx, 10h
 LABEL_SEARCH_FOR_KERNELBIN:
@@ -106,7 +117,7 @@ LABEL_GOTO_NEXT_SECTOR_IN_ROOT_DIR:
 	jmp	LABEL_SEARCH_IN_ROOT_DIR_BEGIN
 
 LABEL_NO_KERNELBIN:
-	mov	dh, 2			; "No KERNEL."
+	mov	dh, 3			; "No KERNEL."
 	call	DispStrRealMode		; 显示字符串
 	jmp	$			; 没有找到 KERNEL.BIN, 死循环在这里
 
@@ -117,27 +128,34 @@ LABEL_FILENAME_FOUND:			; 找到 KERNEL.BIN 后便来到这里继续
 	push	eax
 	mov	eax, [es : di + 01Ch]		; ┓
 	mov	dword [dwKernelSize], eax	; ┛保存 KERNEL.BIN 文件大小
+	cmp	eax, KERNEL_VALID_SPACE
+	ja	.1
 	pop	eax
-
+	jmp	.2
+.1:
+	mov	dh, 4			; "Too Large"
+	call	DispStrRealMode		; 显示字符串
+	jmp	$			; KERNEL.BIN 太大，死循环在这里
+.2:
 	add	di, 01Ah		; di -> 首 Sector
 	mov	cx, word [es:di]
 	push	cx			; 保存此 Sector 在 FAT 中的序号
 	add	cx, ax
 	add	cx, DeltaSectorNo	; 这时 cl 里面是 LOADER.BIN 的起始扇区号 (从 0 开始数的序号)
-	mov	ax, BaseOfKernelFile
-	mov	es, ax			; es <- BaseOfKernelFile
-	mov	bx, OffsetOfKernelFile	; bx <- OffsetOfKernelFile	于是, es:bx = BaseOfKernelFile:OffsetOfKernelFile = BaseOfKernelFile * 10h + OffsetOfKernelFile
+	mov	ax, KERNEL_FILE_SEG
+	mov	es, ax			; es <- KERNEL_FILE_SEG
+	mov	bx, KERNEL_FILE_OFF	; bx <- KERNEL_FILE_OFF	于是, es:bx = KERNEL_FILE_SEG:KERNEL_FILE_OFF = KERNEL_FILE_SEG * 10h + KERNEL_FILE_OFF
 	mov	ax, cx			; ax <- Sector 号
 
 LABEL_GOON_LOADING_FILE:
-	push	ax			; ┓
-	push	bx			; ┃
-	mov	ah, 0Eh			; ┃ 每读一个扇区就在 "Loading  " 后面打一个点, 形成这样的效果:
-	mov	al, '.'			; ┃
-	mov	bl, 0Fh			; ┃ Loading ......
-	int	10h			; ┃
-	pop	bx			; ┃
-	pop	ax			; ┛
+	push	ax			; `.
+	push	bx			;  |
+	mov	ah, 0Eh			;  | 每读一个扇区就在 "Loading  " 后面
+	mov	al, '.'			;  | 打一个点, 形成这样的效果:
+	mov	bl, 0Fh			;  | Loading ......
+	int	10h			;  |
+	pop	bx			;  |
+	pop	ax			; /
 
 	mov	cl, 1
 	call	ReadSector
@@ -150,13 +168,60 @@ LABEL_GOON_LOADING_FILE:
 	add	ax, dx
 	add	ax, DeltaSectorNo
 	add	bx, [BPB_BytsPerSec]
+	jc	.1			; 如果 bx 重新变成 0，说明内核大于 64KB
+	jmp	.2
+.1:
+	push	ax			; es += 0x1000  ← es 指向下一个段
+	mov	ax, es
+	add	ax, 1000h
+	mov	es, ax
+	pop	ax
+.2:
 	jmp	LABEL_GOON_LOADING_FILE
 LABEL_FILE_LOADED:
 
 	call	KillMotor		; 关闭软驱马达
 
-	mov	dh, 1			; "Ready."
+;;; 	;; 取硬盘信息
+;;; 	xor	eax, eax
+;;; 	mov	ah, 08h		; Code for drive parameters
+;;; 	mov	dx, 80h		; hard drive
+;;; 	int	0x13
+;;; 	jb	.hderr		; No such drive?
+;;; 	;; cylinder number
+;;; 	xor	ax, ax		; ax <- 0
+;;; 	mov	ah, cl		; ax <- cl
+;;; 	shr	ah, 6
+;;; 	and	ah, 3	   	; cl bits 7-6: high two bits of maximum cylinder number
+;;; 	mov	al, ch		; CH = low eight bits of maximum cylinder number
+;;; 	;; sector number
+;;; 	and	cl, 3Fh		; cl bits 5-0: max sector number (1-origin)
+;;; 	;; head number
+;;; 	inc	dh		; dh = 1 + max head number (0-origin)
+;;; 	mov	[_dwNrHead], dh
+;;; 	mov	[_dwNrSector], cl
+;;; 	mov	[_dwNrCylinder], ax
+;;; 	jmp	.hdok
+;;; .hderr:
+;;; 	mov	dword [_dwNrHead], 0FFFFh
+;;; .hdok:
+	;; 将硬盘引导扇区内容读入内存 0500h 处
+	xor     ax, ax
+	mov     es, ax
+	mov     ax, 0201h       ; AH = 02
+	                        ; AL = number of sectors to read (must be nonzero) 
+	mov     cx, 1           ; CH = low eight bits of cylinder number
+	                        ; CL = sector number 1-63 (bits 0-5)
+	                        ;      high two bits of cylinder (bits 6-7, hard disk only)
+	mov     dx, 80h         ; DH = head number
+	                        ; DL = drive number (bit 7 set for hard disk)
+	mov     bx, 500h        ; ES:BX -> data buffer
+	int     13h
+	;; 硬盘操作完毕
+
+	mov	dh, 2			; "Ready."
 	call	DispStrRealMode		; 显示字符串
+
 	
 ; 下面准备跳入保护模式 -------------------------------------------
 
@@ -177,7 +242,7 @@ LABEL_FILE_LOADED:
 	mov	cr0, eax
 
 ; 真正进入保护模式
-	jmp	dword SelectorFlatC:(BaseOfLoaderPhyAddr+LABEL_PM_START)
+	jmp	dword SelectorFlatC:(LOADER_PHY_ADDR+LABEL_PM_START)
 
 
 ;============================================================================
@@ -195,8 +260,10 @@ KernelFileName		db	"KERNEL  BIN", 0	; KERNEL.BIN 之文件名
 ; 为简化代码, 下面每个字符串的长度均为 MessageLength
 MessageLength		equ	9
 LoadMessage:		db	"Loading  "
-Message1		db	"Ready.   "
-Message2		db	"No KERNEL"
+Message1		db	"         "
+Message2		db	"Ready.   "
+Message3		db	"No KERNEL"
+Message4		db	"Too Large"
 ;============================================================================
 
 ;----------------------------------------------------------------------------
@@ -273,8 +340,8 @@ GetFATEntry:
 	push	es
 	push	bx
 	push	ax
-	mov	ax, BaseOfKernelFile	; ┓
-	sub	ax, 0100h		; ┣ 在 BaseOfKernelFile 后面留出 4K 空间用于存放 FAT
+	mov	ax, KERNEL_FILE_SEG	; ┓
+	sub	ax, 0100h		; ┣ 在 KERNEL_FILE_SEG 后面留出 4K 空间用于存放 FAT
 	mov	es, ax			; ┛
 	pop	ax
 	mov	byte [bOdd], 0
@@ -291,7 +358,7 @@ LABEL_EVEN:;偶数
 	div	bx			; dx:ax / BPB_BytsPerSec  ==>	ax <- 商   (FATEntry 所在的扇区相对于 FAT 来说的扇区号)
 					;				dx <- 余数 (FATEntry 在扇区内的偏移)。
 	push	dx
-	mov	bx, 0			; bx <- 0	于是, es:bx = (BaseOfKernelFile - 100):00 = (BaseOfKernelFile - 100) * 10h
+	mov	bx, 0			; bx <- 0	于是, es:bx = (KERNEL_FILE_SEG - 100):00 = (KERNEL_FILE_SEG - 100) * 10h
 	add	ax, SectorNoOfFAT1	; 此句执行之后的 ax 就是 FATEntry 所在的扇区号
 	mov	cl, 2
 	call	ReadSector		; 读取 FATEntry 所在的扇区, 一次读两个, 避免在边界发生错误, 因为一个 FATEntry 可能跨越两个扇区
@@ -345,11 +412,9 @@ LABEL_PM_START:
 	mov	ss, ax
 	mov	esp, TopOfStack
 
-	push	szMemChkTitle
-	call	DispStr
-	add	esp, 4
-
 	call	DispMemInfo
+;;; 	call	DispReturn
+;;; 	call	DispHDInfo	; int 13h 读出的硬盘 geometry 好像有点不对头，不知道为什么，干脆不管它了
 	call	SetupPaging
 
 	;mov	ah, 0Fh				; 0000: 黑底    1111: 白字
@@ -359,9 +424,16 @@ LABEL_PM_START:
 	call	InitKernel
 
 	;jmp	$
+	mov	dword [BOOT_PARAM_ADDR], BOOT_PARAM_MAGIC	; BootParam[0] = BootParamMagic;
+	mov	eax, [dwMemSize]				;
+	mov	[BOOT_PARAM_ADDR + 4], eax			; BootParam[1] = MemSize;
+	mov	eax, KERNEL_FILE_SEG
+	shl	eax, 4
+	add	eax, KERNEL_FILE_OFF
+	mov	[BOOT_PARAM_ADDR + 8], eax			; BootParam[2] = KernelFilePhyAddr;
 
 	;***************************************************************
-	jmp	SelectorFlatC:KernelEntryPointPhyAddr	; 正式进入内核 *
+	jmp	SelectorFlatC:KRNL_ENT_PT_PHY_ADDR	; 正式进入内核 *
 	;***************************************************************
 	; 内存看上去是这样的：
 	;              ┃                                    ┃
@@ -372,10 +444,10 @@ LABEL_PM_START:
 	;              ┃■■■■■■■■■■■■■■■■■■┃
 	;              ┃■■■■■■Page  Tables■■■■■■┃
 	;              ┃■■■■■(大小由LOADER决定)■■■■┃
-	;    00101000h ┃■■■■■■■■■■■■■■■■■■┃ PageTblBase
+	;    00101000h ┃■■■■■■■■■■■■■■■■■■┃ PAGE_TBL_BASE
 	;              ┣━━━━━━━━━━━━━━━━━━┫
 	;              ┃■■■■■■■■■■■■■■■■■■┃
-	;    00100000h ┃■■■■Page Directory Table■■■■┃ PageDirBase  <- 1M
+	;    00100000h ┃■■■■Page Directory Table■■■■┃ PAGE_DIR_BASE  <- 1M
 	;              ┣━━━━━━━━━━━━━━━━━━┫
 	;              ┃□□□□□□□□□□□□□□□□□□┃
 	;       F0000h ┃□□□□□□□System ROM□□□□□□┃
@@ -396,16 +468,20 @@ LABEL_PM_START:
 	;       90000h ┃■■■■■■■LOADER.BIN■■■■■■┃ somewhere in LOADER ← esp
 	;              ┣━━━━━━━━━━━━━━━━━━┫
 	;              ┃■■■■■■■■■■■■■■■■■■┃
-	;       80000h ┃■■■■■■■KERNEL.BIN■■■■■■┃
+	;              ┃■■■■■■■■■■■■■■■■■■┃
+	;       70000h ┃■■■■■■■KERNEL.BIN■■■■■■┃
 	;              ┣━━━━━━━━━━━━━━━━━━┫
 	;              ┃■■■■■■■■■■■■■■■■■■┃
-	;       30000h ┃■■■■■■■■KERNEL■■■■■■■┃ 30400h ← KERNEL 入口 (KernelEntryPointPhyAddr)
-	;              ┣━━━━━━━━━━━━━━━━━━┫
-	;              ┃                                    ┃
-	;        7E00h ┃              F  R  E  E            ┃
-	;              ┣━━━━━━━━━━━━━━━━━━┫
 	;              ┃■■■■■■■■■■■■■■■■■■┃
-	;        7C00h ┃■■■■■■BOOT  SECTOR■■■■■■┃
+	;              ┃■■■■■■■■■■■■■■■■■■┃
+	;              ┃■■■■■■■■■■■■■■■■■■┃
+	;              ┃■■■■■■■■■■■■■■■■■■┃
+	;              ┃■■■■■■■■■■■■■■■■■■┃
+	;              ┃■■■■■■■■■■■■■■■■■■┃ 7C00h~7DFFh : BOOT SECTOR, overwritten by the kernel
+	;              ┃■■■■■■■■■■■■■■■■■■┃
+	;              ┃■■■■■■■■■■■■■■■■■■┃
+	;              ┃■■■■■■■■■■■■■■■■■■┃
+	;        1000h ┃■■■■■■■■KERNEL■■■■■■■┃ 1000h ← KERNEL 入口 (KRNL_ENT_PT_PHY_ADDR)
 	;              ┣━━━━━━━━━━━━━━━━━━┫
 	;              ┃                                    ┃
 	;         500h ┃              F  R  E  E            ┃
@@ -425,8 +501,8 @@ LABEL_PM_START:
 	;		┃      ┃ 未使用空间	┃◇◇◇┃ 可以覆盖的内存
 	;		┗━━━┛		┗━━━┛
 	;
-	; 注：KERNEL 的位置实际上是很灵活的，可以通过同时改变 LOAD.INC 中的 KernelEntryPointPhyAddr 和 MAKEFILE 中参数 -Ttext 的值来改变。
-	;     比如，如果把 KernelEntryPointPhyAddr 和 -Ttext 的值都改为 0x400400，则 KERNEL 就会被加载到内存 0x400000(4M) 处，入口在 0x400400。
+	; 注：KERNEL 的位置实际上是很灵活的，可以通过同时改变 LOAD.INC 中的 KRNL_ENT_PT_PHY_ADDR 和 MAKEFILE 中参数 -Ttext 的值来改变。
+	;     比如，如果把 KRNL_ENT_PT_PHY_ADDR 和 -Ttext 的值都改为 0x400400，则 KERNEL 就会被加载到内存 0x400000(4M) 处，入口在 0x400400。
 	;
 
 
@@ -610,6 +686,10 @@ DispMemInfo:
 	push	edi
 	push	ecx
 
+	push	szMemChkTitle
+	call	DispStr
+	add	esp, 4
+
 	mov	esi, MemChkBuf
 	mov	ecx, [dwMCRNumber]	;for(int i=0;i<[MCRNumber];i++) // 每次得到一个ARDS(Address Range Descriptor Structure)结构
 .loop:					;{
@@ -650,6 +730,54 @@ DispMemInfo:
 	ret
 ; ---------------------------------------------------------------------------
 
+	
+;;; ; 显示内存信息 --------------------------------------------------------------
+;;; DispHDInfo:
+;;; 	push	eax
+
+;;; 	cmp	dword [dwNrHead], 0FFFFh
+;;; 	je	.nohd
+
+;;; 	push	szCylinder
+;;; 	call	DispStr			; printf("C:");
+;;; 	add	esp, 4
+
+;;; 	push	dword [dwNrCylinder] 	; NR Cylinder
+;;; 	call	DispInt
+;;; 	pop	eax
+
+;;; 	push	szHead
+;;; 	call	DispStr			; printf(" H:");
+;;; 	add	esp, 4
+
+;;; 	push	dword [dwNrHead] 	; NR Head
+;;; 	call	DispInt
+;;; 	pop	eax
+
+;;; 	push	szSector
+;;; 	call	DispStr			; printf(" S:");
+;;; 	add	esp, 4
+
+;;; 	push	dword [dwNrSector] 	; NR Sector
+;;; 	call	DispInt
+;;; 	pop	eax
+	
+;;; 	jmp	.hdinfo_finish
+	
+;;; .nohd:
+;;; 	push	szNOHD
+;;; 	call	DispStr			; printf("No hard drive. System halt.");
+;;; 	add	esp, 4
+;;; 	jmp	$			; 没有硬盘，死在这里
+	
+;;; .hdinfo_finish:
+;;; 	call	DispReturn
+
+;;; 	pop	eax
+;;; 	ret
+;;; ; ---------------------------------------------------------------------------
+
+	
 ; 启动分页机制 --------------------------------------------------------------
 SetupPaging:
 	; 根据内存大小计算应初始化多少PDE以及多少页表
@@ -669,9 +797,9 @@ SetupPaging:
 	; 首先初始化页目录
 	mov	ax, SelectorFlatRW
 	mov	es, ax
-	mov	edi, PageDirBase	; 此段首地址为 PageDirBase
+	mov	edi, PAGE_DIR_BASE	; 此段首地址为 PAGE_DIR_BASE
 	xor	eax, eax
-	mov	eax, PageTblBase | PG_P  | PG_USU | PG_RWW
+	mov	eax, PAGE_TBL_BASE | PG_P  | PG_USU | PG_RWW
 .1:
 	stosd
 	add	eax, 4096		; 为了简化, 所有页表在内存中是连续的.
@@ -682,7 +810,7 @@ SetupPaging:
 	mov	ebx, 1024		; 每个页表 1024 个 PTE
 	mul	ebx
 	mov	ecx, eax		; PTE个数 = 页表个数 * 1024
-	mov	edi, PageTblBase	; 此段首地址为 PageTblBase
+	mov	edi, PAGE_TBL_BASE	; 此段首地址为 PAGE_TBL_BASE
 	xor	eax, eax
 	mov	eax, PG_P  | PG_USU | PG_RWW
 .2:
@@ -690,7 +818,7 @@ SetupPaging:
 	add	eax, 4096		; 每一页指向 4K 的空间
 	loop	.2
 
-	mov	eax, PageDirBase
+	mov	eax, PAGE_DIR_BASE
 	mov	cr3, eax
 	mov	eax, cr0
 	or	eax, 80000000h
@@ -709,17 +837,17 @@ SetupPaging:
 ; --------------------------------------------------------------------------------------------
 InitKernel:	; 遍历每一个 Program Header，根据 Program Header 中的信息来确定把什么放进内存，放到什么位置，以及放多少。
 	xor	esi, esi
-	mov	cx, word [BaseOfKernelFilePhyAddr + 2Ch]; ┓ ecx <- pELFHdr->e_phnum
+	mov	cx, word [KERNEL_FILE_PHY_ADDR + 2Ch]; ┓ ecx <- pELFHdr->e_phnum
 	movzx	ecx, cx					; ┛
-	mov	esi, [BaseOfKernelFilePhyAddr + 1Ch]	; esi <- pELFHdr->e_phoff
-	add	esi, BaseOfKernelFilePhyAddr		; esi <- OffsetOfKernel + pELFHdr->e_phoff
+	mov	esi, [KERNEL_FILE_PHY_ADDR + 1Ch]	; esi <- pELFHdr->e_phoff
+	add	esi, KERNEL_FILE_PHY_ADDR		; esi <- OffsetOfKernel + pELFHdr->e_phoff
 .Begin:
 	mov	eax, [esi + 0]
 	cmp	eax, 0				; PT_NULL
 	jz	.NoAction
 	push	dword [esi + 010h]		; size	┓
 	mov	eax, [esi + 04h]		;	┃
-	add	eax, BaseOfKernelFilePhyAddr	;	┣ ::memcpy(	(void*)(pPHdr->p_vaddr),
+	add	eax, KERNEL_FILE_PHY_ADDR	;	┣ ::memcpy(	(void*)(pPHdr->p_vaddr),
 	push	eax				; src	┃		uchCode + pPHdr->p_offset,
 	push	dword [esi + 08h]		; dst	┃		pPHdr->p_filesz;
 	call	MemCpy				;	┃
@@ -742,11 +870,18 @@ LABEL_DATA:
 ; 实模式下使用这些符号
 ; 字符串
 _szMemChkTitle:			db	"BaseAddrL BaseAddrH LengthLow LengthHigh   Type", 0Ah, 0
-_szRAMSize:			db	"RAM size:", 0
+_szRAMSize:			db	"RAM size: ", 0
+;;; _szCylinder			db	"HD Info : C=", 0
+;;; _szHead				db	" H=", 0
+;;; _szSector			db	" S=", 0
+;;; _szNOHD				db	"No hard drive. System halt.", 0
 _szReturn:			db	0Ah, 0
 ;; 变量
+;;; _dwNrCylinder			dd	0
+;;; _dwNrHead			dd	0
+;;; _dwNrSector			dd	0
 _dwMCRNumber:			dd	0	; Memory Check Result
-_dwDispPos:			dd	(80 * 6 + 0) * 2	; 屏幕第 6 行, 第 0 列。
+_dwDispPos:			dd	(80 * 7 + 0) * 2	; 屏幕第 7 行, 第 0 列。
 _dwMemSize:			dd	0
 _ARDStruct:			; Address Range Descriptor Structure
 	_dwBaseAddrLow:		dd	0
@@ -757,23 +892,30 @@ _ARDStruct:			; Address Range Descriptor Structure
 _MemChkBuf:	times	256	db	0
 ;
 ;; 保护模式下使用这些符号
-szMemChkTitle		equ	BaseOfLoaderPhyAddr + _szMemChkTitle
-szRAMSize		equ	BaseOfLoaderPhyAddr + _szRAMSize
-szReturn		equ	BaseOfLoaderPhyAddr + _szReturn
-dwDispPos		equ	BaseOfLoaderPhyAddr + _dwDispPos
-dwMemSize		equ	BaseOfLoaderPhyAddr + _dwMemSize
-dwMCRNumber		equ	BaseOfLoaderPhyAddr + _dwMCRNumber
-ARDStruct		equ	BaseOfLoaderPhyAddr + _ARDStruct
-	dwBaseAddrLow	equ	BaseOfLoaderPhyAddr + _dwBaseAddrLow
-	dwBaseAddrHigh	equ	BaseOfLoaderPhyAddr + _dwBaseAddrHigh
-	dwLengthLow	equ	BaseOfLoaderPhyAddr + _dwLengthLow
-	dwLengthHigh	equ	BaseOfLoaderPhyAddr + _dwLengthHigh
-	dwType		equ	BaseOfLoaderPhyAddr + _dwType
-MemChkBuf		equ	BaseOfLoaderPhyAddr + _MemChkBuf
+szMemChkTitle		equ	LOADER_PHY_ADDR + _szMemChkTitle
+szRAMSize		equ	LOADER_PHY_ADDR + _szRAMSize
+;;; szCylinder		equ	LOADER_PHY_ADDR + _szCylinder
+;;; szHead			equ	LOADER_PHY_ADDR + _szHead
+;;; szSector		equ	LOADER_PHY_ADDR + _szSector
+;;; szNOHD			equ	LOADER_PHY_ADDR + _szNOHD
+szReturn		equ	LOADER_PHY_ADDR + _szReturn
+;;; dwNrCylinder		equ	LOADER_PHY_ADDR + _dwNrCylinder
+;;; dwNrHead		equ	LOADER_PHY_ADDR + _dwNrHead
+;;; dwNrSector		equ	LOADER_PHY_ADDR + _dwNrSector
+dwDispPos		equ	LOADER_PHY_ADDR + _dwDispPos
+dwMemSize		equ	LOADER_PHY_ADDR + _dwMemSize
+dwMCRNumber		equ	LOADER_PHY_ADDR + _dwMCRNumber
+ARDStruct		equ	LOADER_PHY_ADDR + _ARDStruct
+	dwBaseAddrLow	equ	LOADER_PHY_ADDR + _dwBaseAddrLow
+	dwBaseAddrHigh	equ	LOADER_PHY_ADDR + _dwBaseAddrHigh
+	dwLengthLow	equ	LOADER_PHY_ADDR + _dwLengthLow
+	dwLengthHigh	equ	LOADER_PHY_ADDR + _dwLengthHigh
+	dwType		equ	LOADER_PHY_ADDR + _dwType
+MemChkBuf		equ	LOADER_PHY_ADDR + _MemChkBuf
 
 
 ; 堆栈就在数据段的末尾
 StackSpace:	times	1000h	db	0
-TopOfStack	equ	BaseOfLoaderPhyAddr + $	; 栈顶
+TopOfStack	equ	LOADER_PHY_ADDR + $	; 栈顶
 ; SECTION .data1 之结束 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
