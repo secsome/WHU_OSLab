@@ -1,5 +1,7 @@
 # WHU_OSLab
-武汉大学信息安全操作系统实验
+武汉大学信息安全操作系统实验(1-9章)
+
+不包含10-12章内容，前面的实验只需要1-9章即可，后面大作业在随书cdimage上修改更快。
 
 https://github.com/secsome/WHU_OSLab/assets/41946354/1d8b886a-53a7-4363-9cca-519a3ee75b57
 
