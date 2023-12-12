@@ -3,17 +3,25 @@
 	"tasks": [
 		{
 			"type": "shell",
+			"label": "(Build) Make kernel all",
+			"command": "make all -j16",
+			"group": "build"
+		},
+		{
+			"dependsOn": "(Build) Make kernel all",
+			"type": "shell",
 			"label": "(Build) Make kernel final",
-			"command": "make final",
+			"command": "make clean",
 			"group": {
 				"kind": "build",
 				"isDefault": true
 			}
 		},
 		{
+			"dependsOn": "(Build) Make kernel final",
 			"type": "shell",
 			"label": "(Build) Make kernel image",
-			"command": "make image",
+			"command": "make buildimg",
 			"group": "build"
 		},
 		{

@@ -1,9 +1,9 @@
 # It must have the same value with 'KernelEntryPointPhyAddr' in load.inc!
-ENTRYPOINT	= 0x400000
+ENTRYPOINT = 0x400000
 
 # Offset of entry point in kernel file
 # It depends on ENTRYPOINT
-ENTRYOFFSET	=   0x400
+ENTRYOFFSET	= 0x400
 
 # Programs, flags, etc.
 ASM		= nasm
@@ -27,10 +27,41 @@ SRCCPP = $(foreach dir,$(SRCDIRS),$(wildcard $(dir)/*.cpp))
 OBJS = $(SRCASM:.asm=.o) $(SRCC:.c=.o) $(SRCCPP:.cpp=.o)
 				
 # All Phony Targets
-.PHONY : everything final image clean realclean disasm all buildimg split compress decompress
+.PHONY : everything final image clean realclean disasm all buildimg split compress decompress check
 
 # Default starting position
-everything : $(BINBOOT) $(BINKERNEL)
+everything : check $(BINBOOT) $(BINKERNEL)
+
+# verify the tool chain version
+check :
+	@nasm_version=$$(nasm -v 2>&1 | awk '/version/ {print $$3}'); \
+	if [ "$$nasm_version" \< "2.15.05" ]; then \
+		echo "Error: NASM version must be greater or equal than 2.15.05"; \
+		exit 1; \
+	fi
+
+	@if ! echo "int main() { return 0; }" | $(CC) -std=c17 -xc - -o test.o >/dev/null 2>&1; then \
+		echo "Error: $(CC) does not support the stdc17 standard"; \
+		exit 1; \
+	fi; \
+	rm -f test.c test.o
+
+	@if ! echo "int main() { return 0; }" | $(CPP) -std=c++20 -xc++ - -o test.o >/dev/null 2>&1; then \
+		echo "Error: $(CPP) does not support the c++20 standard"; \
+		exit 1; \
+	fi; \
+	rm -f test.c test.o
+
+	@bochs_features=$$(bochs --help features 2>&1); \
+    if ! echo "$$bochs_features" | grep -q "gdbstub"; then \
+        echo "Error: Bochs does not support gdbstub"; \
+        exit 1; \
+    fi
+
+	@if ! command -v gdb >/dev/null; then \
+		echo "Error: gdb is not installed"; \
+		exit 1; \
+	fi
 
 compress : harddisk.img
 	gzip harddisk.img
@@ -54,9 +85,6 @@ clean :
 realclean :
 	rm -f $(OBJS) $(BINBOOT) $(BINKERNEL) $(SYMKERNEL)
 	rm -rf ./floppy
-
-disasm :
-	$(DASM) $(DASMFLAGS) $(BINKERNEL) > $(DASMOUTPUT)
 
 # We assume that "a.img" exists in current folder
 buildimg :
