@@ -7,7 +7,6 @@ ENTRYOFFSET	=   0x400
 
 # Programs, flags, etc.
 ASM		= nasm
-DASM	= ndisasm
 CC		= gcc
 CPP		= g++
 LD		= ld
@@ -16,20 +15,17 @@ ASMKFLAGS	= -g -I include/ -f elf
 CFLAGS		= -g -Wall -fno-pie -masm=intel -std=c17 -m32 -fno-stack-protector -I include/ -c -fno-builtin
 CPPFLAGS	= -g -Wall -fno-pie -masm=intel -std=c++20 -m32 -fno-stack-protector -I include/ -c -fno-builtin
 LDFLAGS		= -melf_i386 -flto -Ttext $(ENTRYPOINT)
-DASMFLAGS	= -u -o $(ENTRYPOINT) -e $(ENTRYOFFSET)
 
 # This Program
 BINBOOT	= boot/boot.bin boot/loader.bin
 BINKERNEL	= kernel.bin
 SYMKERNEL = kernel.dbg
-OBJS		= 	sys/kernel.o sys/start.o sys/i8259.o sys/global.o sys/protect.o sys/proc.o sys/clock.o \
-				sys/syscall.o sys/keyboard.o sys/tty.o sys/console.o sys/arith64.o sys/sendrecv.o \
-				sys/systask.o sys/debug.o sys/harddisk.o \
-				lib/asm.o lib/string.o lib/strings.o lib/display.o lib/syscall.o lib/clock.o lib/crc.o lib/ctype.o \
-				lib/printf.o lib/stdlib.o lib/errno.o lib/puts.o lib/assert.o \
-				fs/main.o fs/device.o fs/core.o fs/fd.o
-DASMOUTPUT	= kernel.bin.asm
-
+SRCDIRS = sys lib fs
+SRCASM = $(foreach dir,$(SRCDIRS),$(wildcard $(dir)/*.asm))
+SRCC = $(foreach dir,$(SRCDIRS),$(wildcard $(dir)/*.c))
+SRCCPP = $(foreach dir,$(SRCDIRS),$(wildcard $(dir)/*.cpp))
+OBJS = $(SRCASM:.asm=.o) $(SRCC:.c=.o) $(SRCCPP:.cpp=.o)
+				
 # All Phony Targets
 .PHONY : everything final image clean realclean disasm all buildimg split compress decompress
 
@@ -81,29 +77,11 @@ boot/loader.bin : boot/loader.asm boot/include/load.inc \
 $(BINKERNEL) : $(OBJS)
 	$(LD) $(LDFLAGS) -o $(BINKERNEL) $(OBJS)
 
-sys/%.o : sys/%.asm
+$(SRCASM:%.asm=%.o): %.o: %.asm
 	$(ASM) $(ASMKFLAGS) -o $@ $<
 
-sys/%.o: sys/%.c
+$(SRCC:%.c=%.o): %.o: %.c
 	$(CC) $(CFLAGS) -o $@ $<
 
-sys/%.o: sys/%.cpp
-	$(CPP) $(CPPFLAGS) -o $@ $<
-
-lib/%.o : lib/%.asm
-	$(ASM) $(ASMKFLAGS) -o $@ $<
-
-lib/%.o: lib/%.c
-	$(CC) $(CFLAGS) -o $@ $<
-
-lib/%.o: lib/%.cpp
-	$(CPP) $(CPPFLAGS) -o $@ $<
-
-fs/%.o : fs/%.asm
-	$(ASM) $(ASMKFLAGS) -o $@ $<
-
-fs/%.o: fs/%.c
-	$(CC) $(CFLAGS) -o $@ $<
-
-fs/%.o: fs/%.cpp
+$(SRCCPP:%.cpp=%.o): %.o: %.cpp
 	$(CPP) $(CPPFLAGS) -o $@ $<
